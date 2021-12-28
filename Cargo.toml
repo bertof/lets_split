@@ -11,7 +11,10 @@ cortex-m-rt = "0.6"
 cortex-m-rtic = "0.5"
 cortex-m-semihosting = "0.3"
 panic-semihosting = "0.5"
-stm32f4xx-hal = { version = "0.10", features = [ "rt", "stm32f411" ] }
+stm32f4xx-hal = { version = "0.10", features = [ "rt", "stm32f411", "usb_fs" ] }
+usb-device = "0.2"
+
+keyboard-io = { path = "../keyboard-io/" }
 
 [profile.release]
 debug = 2
