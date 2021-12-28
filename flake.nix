@@ -39,6 +39,11 @@
             gcc-arm-embedded
             gdb-multitarget
 
+            flip-link
+            probe-run
+            usbutils
+            screen
+
             git
             cmake
             minicom
