@@ -3,52 +3,63 @@
 
 use lets_split as _; // global logger + panicking-behavior + memory layout
 
-#[rtic::app(device = stm32f4xx_hal::pac, peripherals = true, dispatchers = [ TIM3 ])]
+#[rtic::app(device = stm32f4xx_hal::pac, peripherals = true)]
 mod app {
-    const SYS_TICK: u32 = 84_000_000;
-
-    use dwt_systick_monotonic::{DwtSystick, ExtU32 as _};
-    use keyboard_io::{
-        hid::keyboard::{KeyboardReport, USB_PRODUCT_ID, USB_VENDOR_ID},
-        HIDClass, SerializedDescriptor,
+    use core::iter;
+    use keyberon::{
+        self,
+        key_code::{KbHidReport, KeyCode},
     };
     use stm32f4xx_hal::{
-        gpio::{gpioc::PC13, Output, PushPull},
+        gpio::{self, EPin, Input, PullUp},
         otg_fs::{UsbBusType, USB},
+        pac,
         prelude::*,
-        time::U32Ext as _,
+        timer,
     };
-    use usb_device::{class_prelude::*, prelude::*};
-    use usbd_serial::SerialPort;
+    use usb_device::class_prelude::*;
 
-    // TODO: Add a monotonic if scheduling will be used
-    #[monotonic(binds = SysTick, default = true)]
-    type DwtMono = DwtSystick<SYS_TICK>;
+    type UsbKeyboardClass = keyberon::Class<'static, UsbBusType, Leds>;
+    type UsbDevice = usb_device::device::UsbDevice<'static, UsbBusType>;
+
+    pub struct Leds {
+        caps_lock: gpio::gpioc::PC13<gpio::Output<gpio::PushPull>>,
+    }
+
+    impl keyberon::keyboard::Leds for Leds {
+        fn caps_lock(&mut self, status: bool) {
+            if status {
+                self.caps_lock.set_low()
+            } else {
+                self.caps_lock.set_high()
+            }
+        }
+    }
 
     // Shared resources go here
     #[shared]
     struct Shared {
-        usb_device: UsbDevice<'static, UsbBusType>,
-        usb_keyboard_class: HIDClass<'static, UsbBusType>,
-        usb_serial_class: SerialPort<'static, UsbBusType>,
+        usb_dev: UsbDevice,
+        usb_class: UsbKeyboardClass,
     }
 
     // Local resources go here
     #[local]
     struct Local {
-        // TODO: Add resources
+        in_pins: [EPin<Input<PullUp>>; 1],
+        // out_pins: [EPin<Output<PushPull>>; 1],
+        timer: timer::CountDownTimer<pac::TIM3>,
     }
 
     #[init(local = [
-      USB_ALLOCATOR: Option<UsbBusAllocator<UsbBusType>> = None,
-      EP_MEMORY: [u32; 1024] = [0; 1024]
+      usb_allocator: Option<UsbBusAllocator<UsbBusType>> = None,
+      ep_memory: [u32; 1024] = [0; 1024]
     ])]
-    fn init(cx: init::Context) -> (Shared, Local, init::Monotonics) {
-        defmt::info!("init");
-        let usb_allocator = cx.local.USB_ALLOCATOR;
-        let ep_memory = cx.local.EP_MEMORY;
+    fn init(c: init::Context) -> (Shared, Local, init::Monotonics) {
+        let usb_allocator = c.local.usb_allocator;
+        let ep_memory = c.local.ep_memory;
 
-        let rcc = cx.device.RCC.constrain();
+        let rcc = c.device.RCC.constrain();
         let clocks = rcc
             .cfgr
             .use_hse(25.mhz())
@@ -56,23 +67,21 @@ mod app {
             .require_pll48clk()
             .freeze();
 
-        let mut dcb = cx.core.DCB;
-        dcb.enable_trace();
-        let mono_timer = DwtSystick::new(&mut dcb, cx.core.DWT, cx.core.SYST, clocks.sysclk().0);
+        let mut timer = timer::Timer::new(c.device.TIM3, &clocks).start_count_down(1.khz());
+        timer.listen(timer::Event::TimeOut);
 
-        let gpioa = cx.device.GPIOA.split();
-        // let gpiob = cx.device.GPIOB.split();
-        let gpioc = cx.device.GPIOC.split();
-        // let gpiod = cx.device.GPIOD.split();
+        let gpioa = c.device.GPIOA.split();
+        // let gpiob = c.device.GPIOB.split();
+        let gpioc = c.device.GPIOC.split();
 
-        // let led = gpiod.pd12.into_push_pull_output();
         let mut led = gpioc.pc13.into_push_pull_output();
         led.set_low();
+        let leds = Leds { caps_lock: led };
 
         let usb = USB {
-            usb_global: cx.device.OTG_FS_GLOBAL,
-            usb_device: cx.device.OTG_FS_DEVICE,
-            usb_pwrclk: cx.device.OTG_FS_PWRCLK,
+            usb_global: c.device.OTG_FS_GLOBAL,
+            usb_device: c.device.OTG_FS_DEVICE,
+            usb_pwrclk: c.device.OTG_FS_PWRCLK,
             pin_dm: gpioa.pa11.into_alternate(),
             pin_dp: gpioa.pa12.into_alternate(),
             hclk: clocks.hclk(),
@@ -80,28 +89,20 @@ mod app {
         *usb_allocator = Some(UsbBusType::new(usb, ep_memory));
         let usb_allocator = usb_allocator.as_ref().unwrap();
 
-        let usb_keyboard_class = HIDClass::new(usb_allocator, KeyboardReport::desc(), 10);
-        let usb_serial_class = SerialPort::new(usb_allocator);
-        let usb_device =
-            UsbDeviceBuilder::new(usb_allocator, UsbVidPid(USB_VENDOR_ID, USB_PRODUCT_ID))
-                .manufacturer("Bertof")
-                .product("lets split")
-                .serial_number(env!("CARGO_PKG_VERSION"))
-                .build();
+        let usb_class = keyberon::new_class(usb_allocator, leds);
+        let usb_dev = keyberon::new_device(usb_allocator);
 
-        task1::spawn().unwrap();
+        let in_pins = [gpioa.pa0.into_pull_up_input().erase()];
+        // let out_pins = [gpioa.pa3.into_push_pull_output().erase()];
 
-        // Setup the monotonic timer
         (
-            Shared {
-                usb_device,
-                usb_keyboard_class,
-                usb_serial_class,
-            },
+            Shared { usb_dev, usb_class },
             Local {
-                // Initialization of local resources go here
+                in_pins,
+                // out_pins,
+                timer,
             },
-            init::Monotonics(mono_timer),
+            init::Monotonics(),
         )
     }
 
@@ -117,48 +118,39 @@ mod app {
         }
     }
 
-    #[task(shared = [ usb_serial_class ])]
-    fn task1(mut cx: task1::Context) {
-        defmt::info!("Hello from task1!");
+    fn send_report(iter: impl Iterator<Item = KeyCode>, usb_class: &mut UsbKeyboardClass) {
+        let report: KbHidReport = iter.collect();
+        if usb_class.device_mut().set_keyboard_report(report.clone()) {
+            while let Ok(0) = usb_class.write(report.as_bytes()) {}
+        }
+    }
 
-        cx.shared.usb_serial_class.lock(|usb_serial_class| {
-            match usb_serial_class.write("Hello there!\r\n".as_bytes()) {
-                Ok(_) => {}
-                Err(UsbError::WouldBlock) => {}
-                Err(e) => Err(e).unwrap(),
-            }
+    #[task(binds = TIM3, priority = 1, shared = [usb_class], local = [timer, in_pins])]
+    fn tick(mut c: tick::Context) {
+        c.local.timer.clear_interrupt(timer::Event::TimeOut);
+        let pressed = c.local.in_pins[0].is_low();
+        c.shared.usb_class.lock(|usb_class| {
+            if pressed {
+                send_report(iter::once(KeyCode::A), usb_class);
+            } else {
+                send_report(iter::empty(), usb_class);
+            };
         });
-
-        task1::spawn_after(1.secs()).unwrap();
     }
 
-    #[task(binds = OTG_FS, priority = 2, shared = [usb_device, usb_keyboard_class, usb_serial_class])]
+    fn usb_poll(usb_dev: &mut UsbDevice, keyboard: &mut UsbKeyboardClass) {
+        if usb_dev.poll(&mut [keyboard]) {
+            keyboard.poll();
+        }
+    }
+
+    #[task(binds = OTG_FS, priority = 2, shared = [usb_dev, usb_class])]
     fn usb_tx(cx: usb_tx::Context) {
-        (
-            cx.shared.usb_device,
-            cx.shared.usb_keyboard_class,
-            cx.shared.usb_serial_class,
-        )
-            .lock(|usb_device, usb_keyboard_class, usb_serial_class| {
-                if usb_device.poll(&mut [usb_keyboard_class, usb_serial_class]) {
-                    usb_keyboard_class.poll();
-                    usb_serial_class.poll();
-                }
-            });
+        (cx.shared.usb_dev, cx.shared.usb_class).lock(usb_poll);
     }
 
-    #[task(binds = OTG_FS_WKUP, priority = 2, shared = [usb_device, usb_keyboard_class, usb_serial_class])]
+    #[task(binds = OTG_FS_WKUP, priority = 2, shared = [usb_dev, usb_class])]
     fn usb_rx(cx: usb_rx::Context) {
-        (
-            cx.shared.usb_device,
-            cx.shared.usb_keyboard_class,
-            cx.shared.usb_serial_class,
-        )
-            .lock(|usb_device, usb_keyboard_class, usb_serial_class| {
-                if usb_device.poll(&mut [usb_keyboard_class, usb_serial_class]) {
-                    usb_keyboard_class.poll();
-                    usb_serial_class.poll();
-                }
-            });
+        (cx.shared.usb_dev, cx.shared.usb_class).lock(usb_poll);
     }
 }
