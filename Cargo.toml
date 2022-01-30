@@ -17,11 +17,8 @@ dwt-systick-monotonic = "1.0"
 
 stm32f4xx-hal = { version = "0.10", features = [ "rt", "stm32f411", "usb_fs" ] }
 usb-device = "0.2"
-usbd-serial = "0.1"
 
 keyboard-io = { path = "../keyboard-io/" }
-keyberon = "*"
-
 
 [features]
 # set logging levels here

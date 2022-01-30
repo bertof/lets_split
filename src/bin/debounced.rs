@@ -8,6 +8,7 @@ mod app {
     use core::iter;
     use keyboard_io::{
         codes::KeyboardCode,
+        debouncer::DebouncedPin,
         hid::{keyboard::KeyboardReport, PID, VID},
         prelude::*,
     };
@@ -32,7 +33,7 @@ mod app {
     // Local resources go here
     #[local]
     struct Local {
-        in_pins: [EPin<Input<PullUp>>; 1],
+        in_pins: [DebouncedPin<EPin<Input<PullUp>>>; 1],
         // out_pins: [EPin<Output<PushPull>>; 1],
         timer: timer::CountDownTimer<pac::TIM3>,
     }
@@ -81,7 +82,7 @@ mod app {
             .serial_number(env!("CARGO_PKG_VERSION"))
             .build();
 
-        let in_pins = [gpioa.pa0.into_pull_up_input().erase()];
+        let in_pins = [DebouncedPin::new(gpioa.pa0.into_pull_up_input().erase(), 2)];
         // let out_pins = [gpioa.pa3.into_push_pull_output().erase()];
 
         (
@@ -125,10 +126,10 @@ mod app {
     #[task(binds = TIM3, priority = 1, shared = [usb_class], local = [timer, in_pins])]
     fn tick(mut c: tick::Context) {
         c.local.timer.clear_interrupt(timer::Event::TimeOut);
-        let pressed = c.local.in_pins[0].is_low();
+        let pressed = c.local.in_pins[0].is_low().unwrap();
         c.shared.usb_class.lock(|usb_class| {
             if pressed {
-                send_report(iter::once(KeyboardCode::A), usb_class);
+                send_report(iter::once(KeyboardCode::B), usb_class);
             } else {
                 send_report(iter::empty(), usb_class);
             };

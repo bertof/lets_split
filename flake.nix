@@ -19,12 +19,6 @@
           hello = pkgs.hello;
           sample = pkgs.gitAndTools;
         };
-        defaultPackage = packages.hello;
-
-        apps = {
-          hello = flake-utils.lib.mkApp { drv = packages.hello; };
-        };
-        defaultApp = apps.hello;
 
         devShell = pkgs.mkShell {
           buildInputs = with pkgs; [

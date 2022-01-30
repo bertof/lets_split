@@ -5,14 +5,16 @@ use lets_split as _; // global logger + panicking-behavior + memory layout
 
 #[rtic::app(device = stm32f4xx_hal::pac, peripherals = true)]
 mod app {
-    use core::iter;
+    use core::convert::Infallible;
     use keyboard_io::{
+        buttons::{Button, Grid, ReportGenerator},
         codes::KeyboardCode,
+        debouncer::DebouncedPin,
         hid::{keyboard::KeyboardReport, PID, VID},
         prelude::*,
     };
     use stm32f4xx_hal::{
-        gpio::{EPin, Input, PullUp},
+        gpio::{EPin, Input, Output, PullUp, PushPull},
         otg_fs::{UsbBusType, USB},
         pac,
         prelude::*,
@@ -21,6 +23,9 @@ mod app {
 
     type UsbKeyboardClass = HIDClass<'static, UsbBusType>;
     type UsbDevice = keyboard_io::prelude::UsbDevice<'static, UsbBusType>;
+    type DebouncedInputPin = DebouncedPin<EPin<Input<PullUp>>>;
+    type InputPin = EPin<Input<PullUp>>;
+    type OutputPin = EPin<Output<PushPull>>;
 
     // Shared resources go here
     #[shared]
@@ -32,8 +37,7 @@ mod app {
     // Local resources go here
     #[local]
     struct Local {
-        in_pins: [EPin<Input<PullUp>>; 1],
-        // out_pins: [EPin<Output<PushPull>>; 1],
+        grid: Grid<Infallible, KeyboardCode, InputPin, OutputPin, 2, 2>,
         timer: timer::CountDownTimer<pac::TIM3>,
     }
 
@@ -57,7 +61,7 @@ mod app {
         timer.listen(timer::Event::TimeOut);
 
         let gpioa = c.device.GPIOA.split();
-        // let gpiob = c.device.GPIOB.split();
+        let gpiob = c.device.GPIOB.split();
         let gpioc = c.device.GPIOC.split();
 
         let mut led = gpioc.pc13.into_push_pull_output();
@@ -81,16 +85,33 @@ mod app {
             .serial_number(env!("CARGO_PKG_VERSION"))
             .build();
 
-        let in_pins = [gpioa.pa0.into_pull_up_input().erase()];
-        // let out_pins = [gpioa.pa3.into_push_pull_output().erase()];
+        let inputs = [
+            gpiob.pb1.into_pull_up_input().erase(),
+            gpiob.pb0.into_pull_up_input().erase(),
+        ];
+        let outputs = [
+            gpioa.pa7.into_push_pull_output().erase(),
+            gpioa.pa6.into_push_pull_output().erase(),
+        ];
+
+        let grid = Grid {
+            inputs,
+            outputs,
+            buttons: [
+                [
+                    Button::Simple(KeyboardCode::A),
+                    Button::Simple(KeyboardCode::B),
+                ],
+                [
+                    Button::Simple(KeyboardCode::C),
+                    Button::Simple(KeyboardCode::D),
+                ],
+            ],
+        };
 
         (
             Shared { usb_dev, usb_class },
-            Local {
-                in_pins,
-                // out_pins,
-                timer,
-            },
+            Local { grid, timer },
             init::Monotonics(),
         )
     }
@@ -107,32 +128,16 @@ mod app {
         }
     }
 
-    fn send_report(iter: impl Iterator<Item = KeyboardCode>, usb_class: &mut UsbKeyboardClass) {
-        let mut report = KeyboardReport {
-            modifier: Default::default(),
-            reserved: Default::default(),
-            leds: Default::default(),
-            keycodes: Default::default(),
-        };
-        for key in iter {
-            if let Some(v) = report.keycodes.iter_mut().find(|v| **v == 0x00) {
-                *v = key as u8;
-            }
-        }
-        while let Ok(0) = usb_class.push_input(&report) {}
-    }
-
-    #[task(binds = TIM3, priority = 1, shared = [usb_class], local = [timer, in_pins])]
+    #[task(binds = TIM3, priority = 1, shared = [usb_class], local = [timer, grid])]
     fn tick(mut c: tick::Context) {
         c.local.timer.clear_interrupt(timer::Event::TimeOut);
-        let pressed = c.local.in_pins[0].is_low();
-        c.shared.usb_class.lock(|usb_class| {
-            if pressed {
-                send_report(iter::once(KeyboardCode::A), usb_class);
-            } else {
-                send_report(iter::empty(), usb_class);
-            };
-        });
+        // let pressed = c.local.in_pins[0].is_low().unwrap();
+        let report = ReportGenerator::keyboard_report(c.local.grid).unwrap();
+        c.shared.usb_class.lock(
+            |usb_class| {
+                while let Ok(0) = usb_class.push_input(&report) {}
+            },
+        );
     }
 
     fn usb_poll(usb_dev: &mut UsbDevice, keyboard: &mut UsbKeyboardClass) {
