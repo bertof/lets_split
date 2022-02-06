@@ -3,11 +3,11 @@
 
 use lets_split as _; // global logger + panicking-behavior + memory layout
 
-#[rtic::app(device = stm32f4xx_hal::pac, peripherals = true, dispatchers = [ TIM4 ])]
+#[rtic::app(device = stm32f4xx_hal::pac, peripherals = true)]
 mod app {
-    use defmt::info;
+    use core::convert::{Infallible, TryFrom};
     use keyboard_io::{
-        buttons::{Button, ButtonAction, ButtonStatusEvent, GridState, LocalGrid},
+        buttons::{ButtonAction, ButtonStatusEvent, ReportGenerator, StatusGrid},
         codes::KeyboardCode,
         // debouncer::DebouncedPin,
         hid::{keyboard::KeyboardReport, PID, VID},
@@ -16,9 +16,9 @@ mod app {
     use stm32f4xx_hal::{
         gpio::{EPin, Input, Output, PullUp, PushPull},
         otg_fs::{UsbBusType, USB},
-        pac,
+        pac::{self, USART1},
         prelude::*,
-        timer,
+        serial, timer,
     };
 
     type UsbKeyboardClass = HIDClass<'static, UsbBusType>;
@@ -30,16 +30,19 @@ mod app {
     // Shared resources go here
     #[shared]
     struct Shared {
-        status_grid: GridState<KeyboardCode, 2, 2>,
         usb_dev: UsbDevice,
         usb_class: UsbKeyboardClass,
+        status_matrix: (),
     }
 
     // Local resources go here
     #[local]
     struct Local {
-        local_grid: LocalGrid<InputPin, OutputPin, 2, 2>,
+        grid: StatusGrid<Infallible, KeyboardCode, InputPin, OutputPin, 2, 2>,
         timer: timer::CountDownTimer<pac::TIM3>,
+        intra_rx: serial::Rx<USART1, u8>,
+        intra_tx: serial::Tx<USART1, u8>,
+        is_master: bool,
     }
 
     #[init(local = [
@@ -86,6 +89,19 @@ mod app {
             .serial_number(env!("CARGO_PKG_VERSION"))
             .build();
 
+        let mut serial = serial::Serial::<_, _, _>::new(
+            c.device.USART1,
+            (
+                gpioa.pa9.into_alternate::<7>(),
+                gpioa.pa10.into_alternate::<7>(),
+            ),
+            serial::config::Config::default(), // .baudrate(38_400.bps())
+            clocks,
+        )
+        .unwrap();
+        serial.listen(serial::Event::Rxne);
+        let (intra_tx, intra_rx) = serial.split();
+
         let inputs = [
             gpiob.pb1.into_pull_up_input().erase(),
             gpiob.pb0.into_pull_up_input().erase(),
@@ -95,28 +111,36 @@ mod app {
             gpioa.pa6.into_push_pull_output().erase(),
         ];
 
-        let local_grid = LocalGrid::new(inputs, outputs, PinState::Low);
-
-        let status_grid = GridState::new([
-            [
-                Button::new(ButtonAction::Simple(KeyboardCode::A)),
-                Button::new(ButtonAction::Simple(KeyboardCode::B)),
+        let grid = StatusGrid {
+            inputs,
+            outputs,
+            buttons: [
+                [
+                    ButtonAction::Simple(KeyboardCode::A),
+                    ButtonAction::Simple(KeyboardCode::B),
+                ],
+                [
+                    ButtonAction::Simple(KeyboardCode::C),
+                    ButtonAction::Simple(KeyboardCode::D),
+                ],
             ],
-            [
-                Button::new(ButtonAction::Simple(KeyboardCode::C)),
-                Button::new(ButtonAction::Simple(KeyboardCode::D)),
-            ],
-        ]);
+        };
 
-        info!("Init completed");
+        let is_master = true; // TODO: use jumper on a pin
 
         (
             Shared {
-                usb_dev,
+                status_matrix: (),
                 usb_class,
-                status_grid,
+                usb_dev,
             },
-            Local { local_grid, timer },
+            Local {
+                grid,
+                intra_rx,
+                intra_tx,
+                is_master,
+                timer,
+            },
             init::Monotonics(),
         )
     }
@@ -133,32 +157,41 @@ mod app {
         }
     }
 
-    #[task(binds = TIM3, priority = 1, shared = [ status_grid, usb_class ], local = [ local_grid, timer ])]
-    fn local_tick(c: local_tick::Context) {
+    /// Receive message from serial
+    #[task(binds = USART1, priority = 5, shared = [ status_matrix ], local = [ intra_rx, serial_buf: [u8; 4] = [0; 4] ])]
+    fn rx_serial(c: rx_serial::Context) {
+        let buf = c.local.serial_buf;
+
+        if let Ok(b) = c.local.intra_rx.read() {
+            buf.rotate_left(1);
+            buf[3] = b;
+
+            if let Ok(_button_status_message) = ButtonStatusEvent::try_from(*buf) {
+                todo!("Update status matrix")
+            }
+        }
+    }
+
+    /// Local keyboard tick
+    #[task(binds = TIM3, priority = 1, shared = [ usb_class ], local = [ timer, grid, intra_tx, is_master ])]
+    fn local_tick(mut c: local_tick::Context) {
+        // Explicitly wait for timer tick
         c.local.timer.wait().ok();
 
-        for event in c.local.local_grid.get_events() {
-            handle_event::spawn(event).ok();
-        }
-
-        keyboard_tick::spawn().ok();
-
         // let pressed = c.local.in_pins[0].is_low().unwrap();
-        // let report = ReportGenerator::keyboard_report(c.local.grid).unwrap();
-        // c.shared.usb_class.lock(
-        //     |usb_class| {
-        //         while let Ok(0) = usb_class.push_input(&report) {}
-        //     },
-        // );
+        let report = ReportGenerator::keyboard_report(c.local.grid).unwrap();
+        c.shared.usb_class.lock(
+            |usb_class| {
+                while let Ok(0) = usb_class.push_input(&report) {}
+            },
+        );
     }
 
-    #[task(priority = 3, capacity = 8, shared = [ status_grid ])]
-    fn handle_event(mut _c: handle_event::Context, _event: ButtonStatusEvent) {
-        info!("Event: {:?}", _event)
+    fn usb_poll(usb_dev: &mut UsbDevice, keyboard: &mut UsbKeyboardClass) {
+        if usb_dev.poll(&mut [keyboard]) {
+            keyboard.poll();
+        }
     }
-
-    #[task(priority = 3, shared = [ status_grid ])]
-    fn keyboard_tick(mut _c: keyboard_tick::Context) {}
 
     #[task(binds = OTG_FS, priority = 2, shared = [usb_dev, usb_class])]
     fn usb_tx(cx: usb_tx::Context) {
@@ -168,11 +201,5 @@ mod app {
     #[task(binds = OTG_FS_WKUP, priority = 2, shared = [usb_dev, usb_class])]
     fn usb_rx(cx: usb_rx::Context) {
         (cx.shared.usb_dev, cx.shared.usb_class).lock(usb_poll);
-    }
-
-    fn usb_poll(usb_dev: &mut UsbDevice, keyboard: &mut UsbKeyboardClass) {
-        if usb_dev.poll(&mut [keyboard]) {
-            keyboard.poll();
-        }
     }
 }
