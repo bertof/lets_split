@@ -5,12 +5,17 @@ use lets_split as _; // global logger + panicking-behavior + memory layout
 
 #[rtic::app(device = stm32f4xx_hal::pac, peripherals = true, dispatchers = [ TIM4 ])]
 mod app {
+    use core::convert::Infallible;
+
     use defmt::info;
     use keyboard_io::{
         buttons::{Button, ButtonAction, ButtonStatusEvent, GridState, LocalGrid},
         codes::KeyboardCode,
         // debouncer::DebouncedPin,
-        hid::{keyboard::KeyboardReport, PID, VID},
+        hid::{
+            keyboard::{KeyboardReport, LedStatus},
+            PID, VID,
+        },
         prelude::*,
     };
     use stm32f4xx_hal::{
@@ -142,23 +147,25 @@ mod app {
         }
 
         keyboard_tick::spawn().ok();
-
-        // let pressed = c.local.in_pins[0].is_low().unwrap();
-        // let report = ReportGenerator::keyboard_report(c.local.grid).unwrap();
-        // c.shared.usb_class.lock(
-        //     |usb_class| {
-        //         while let Ok(0) = usb_class.push_input(&report) {}
-        //     },
-        // );
     }
 
     #[task(priority = 3, capacity = 8, shared = [ status_grid ])]
-    fn handle_event(mut _c: handle_event::Context, _event: ButtonStatusEvent) {
-        info!("Event: {:?}", _event)
+    fn handle_event(mut c: handle_event::Context, event: ButtonStatusEvent) {
+        info!("Event: {:?}", event);
+        c.shared.status_grid.lock(|status_grid| {
+            status_grid.set_pressed(event.inp, event.out, event.pressed);
+        })
     }
 
-    #[task(priority = 3, shared = [ status_grid ])]
-    fn keyboard_tick(mut _c: keyboard_tick::Context) {}
+    #[task(priority = 3, shared = [ usb_class, status_grid ])]
+    fn keyboard_tick(c: keyboard_tick::Context) {
+        (c.shared.usb_class, c.shared.status_grid).lock(|usb_class, status_grid| {
+            let report: KeyboardReport = status_grid
+                .to_report::<KeyboardReport, LedStatus, Infallible>()
+                .unwrap();
+            while let Ok(0) = usb_class.push_input(&report) {}
+        })
+    }
 
     #[task(binds = OTG_FS, priority = 2, shared = [usb_dev, usb_class])]
     fn usb_tx(cx: usb_tx::Context) {
