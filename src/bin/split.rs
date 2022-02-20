@@ -8,7 +8,9 @@ mod app {
     use core::convert::{From, Infallible, TryFrom};
     use defmt::println;
     use keyboard_io::{
-        buttons::{Button, ButtonAction, ButtonStatusEvent, GridState, LocalGrid},
+        buttons::{
+            Button, ButtonAction, ButtonStatusEvent, GridState, LocalGrid, StatefulInputPin,
+        },
         codes::KeyboardCode,
         hid::{
             keyboard::{KeyboardReport, LedStatus},
@@ -31,10 +33,14 @@ mod app {
     type InputPin = EPin<Input<PullUp>>;
     type OutputPin = EPin<Output<PushPull>>;
 
+    fn bn<E>(e: E) -> Button<E> {
+        Button::new(ButtonAction::Simple(e))
+    }
+
     // Shared resources go here
     #[shared]
     struct Shared {
-        status_grid: GridState<KeyboardCode, 2, 2>,
+        status_grid: GridState<KeyboardCode, 4, 12>,
         usb_dev: UsbDevice,
         usb_class: UsbKeyboardClass,
     }
@@ -42,12 +48,13 @@ mod app {
     // Local resources go here
     #[local]
     struct Local {
-        pa0: InputPin,
-        led: OutputPin,
-        local_grid: LocalGrid<InputPin, OutputPin, 2, 2>,
-        timer: timer::CountDownTimer<pac::TIM3>,
-        intra_tx: serial::Tx<USART1>,
+        button: StatefulInputPin<InputPin>,
         intra_rx: serial::Rx<USART1>,
+        intra_tx: serial::Tx<USART1>,
+        is_left_side: bool,
+        led: OutputPin,
+        local_grid: LocalGrid<InputPin, OutputPin, 6, 4>,
+        timer: timer::CountDownTimer<pac::TIM3>,
     }
 
     #[init(local = [
@@ -94,39 +101,125 @@ mod app {
             .serial_number(env!("CARGO_PKG_VERSION"))
             .build();
 
-        let mut serial = serial::Serial::new(
+        let serial = serial::Serial::new(
             c.device.USART1,
             (gpioa.pa9.into_alternate(), gpioa.pa10.into_alternate()),
             serial::config::Config::default().baudrate(38_400.bps()),
             &clocks,
         )
         .unwrap();
-        serial.listen(serial::Event::Rxne);
-        let (intra_tx, intra_rx) = serial.split();
+        let (intra_tx, mut intra_rx) = serial.split();
+        intra_rx.listen();
 
-        let inputs = [
-            gpiob.pb1.into_pull_up_input().erase(),
-            gpiob.pb0.into_pull_up_input().erase(),
-        ];
-        let outputs = [
-            gpioa.pa7.into_push_pull_output().erase(),
-            gpioa.pa6.into_push_pull_output().erase(),
-        ];
+        let button = StatefulInputPin::new(gpioa.pa0.into_pull_up_input().erase());
+
+        // Jumper to ground on right side of the keyboard
+        let side_jumper_input = gpioa.pa1.into_pull_up_input().erase();
+        let mut side_jumper_output = gpioa.pa15.into_push_pull_output().erase();
+        side_jumper_output.set_low();
+        let is_left_side = side_jumper_input.is_high();
+        side_jumper_output.set_high();
+
+        println!("Left side: {}", is_left_side);
+
+        let (inputs, outputs) = if is_left_side {
+            (
+                [
+                    gpioa.pa4.into_pull_up_input().erase(),
+                    gpioa.pa3.into_pull_up_input().erase(),
+                    gpioa.pa2.into_pull_up_input().erase(),
+                    gpiob.pb9.into_pull_up_input().erase(),
+                    gpiob.pb8.into_pull_up_input().erase(),
+                    gpiob.pb7.into_pull_up_input().erase(),
+                ],
+                [
+                    gpiob.pb3.into_push_pull_output().erase(),
+                    gpiob.pb4.into_push_pull_output().erase(),
+                    gpiob.pb5.into_push_pull_output().erase(),
+                    gpiob.pb6.into_push_pull_output().erase(),
+                ],
+            )
+        } else {
+            (
+                [
+                    gpioa.pa6.into_pull_up_input().erase(),
+                    gpioa.pa5.into_pull_up_input().erase(),
+                    gpioa.pa4.into_pull_up_input().erase(),
+                    gpiob.pb5.into_pull_up_input().erase(),
+                    gpiob.pb4.into_pull_up_input().erase(),
+                    gpiob.pb3.into_pull_up_input().erase(),
+                ],
+                [
+                    gpiob.pb2.into_push_pull_output().erase(),
+                    gpiob.pb1.into_push_pull_output().erase(),
+                    gpiob.pb0.into_push_pull_output().erase(),
+                    gpioa.pa7.into_push_pull_output().erase(),
+                ],
+            )
+        };
 
         let local_grid = LocalGrid::new(inputs, outputs, PinState::Low);
 
-        let status_grid = GridState::new([
-            [
-                Button::new(ButtonAction::Simple(KeyboardCode::A)),
-                Button::new(ButtonAction::Simple(KeyboardCode::B)),
-            ],
-            [
-                Button::new(ButtonAction::Simple(KeyboardCode::C)),
-                Button::new(ButtonAction::Simple(KeyboardCode::D)),
-            ],
-        ]);
-
-        let pa0 = gpioa.pa0.into_pull_up_input().erase();
+        let status_grid = {
+            GridState::new([
+                [
+                    bn(KeyboardCode::Escape),
+                    bn(KeyboardCode::Q),
+                    bn(KeyboardCode::W),
+                    bn(KeyboardCode::E),
+                    bn(KeyboardCode::R),
+                    bn(KeyboardCode::T),
+                    bn(KeyboardCode::Y),
+                    bn(KeyboardCode::U),
+                    bn(KeyboardCode::I),
+                    bn(KeyboardCode::O),
+                    bn(KeyboardCode::P),
+                    bn(KeyboardCode::BSpace),
+                ],
+                [
+                    bn(KeyboardCode::Tab),
+                    bn(KeyboardCode::A),
+                    bn(KeyboardCode::S),
+                    bn(KeyboardCode::D),
+                    bn(KeyboardCode::F),
+                    bn(KeyboardCode::G),
+                    bn(KeyboardCode::H),
+                    bn(KeyboardCode::J),
+                    bn(KeyboardCode::K),
+                    bn(KeyboardCode::L),
+                    bn(KeyboardCode::SColon),
+                    bn(KeyboardCode::Quote),
+                ],
+                [
+                    bn(KeyboardCode::LShift),
+                    bn(KeyboardCode::Z),
+                    bn(KeyboardCode::X),
+                    bn(KeyboardCode::C),
+                    bn(KeyboardCode::V),
+                    bn(KeyboardCode::B),
+                    bn(KeyboardCode::N),
+                    bn(KeyboardCode::M),
+                    bn(KeyboardCode::Comma),
+                    bn(KeyboardCode::Dot),
+                    bn(KeyboardCode::Slash),
+                    bn(KeyboardCode::Enter),
+                ],
+                [
+                    bn(KeyboardCode::LCtrl),
+                    bn(KeyboardCode::LGui),
+                    bn(KeyboardCode::LAlt),
+                    Button::new(ButtonAction::Unassigned),
+                    Button::new(ButtonAction::Unassigned),
+                    bn(KeyboardCode::Space),
+                    bn(KeyboardCode::Space),
+                    Button::new(ButtonAction::Unassigned),
+                    bn(KeyboardCode::Left),
+                    bn(KeyboardCode::Down),
+                    bn(KeyboardCode::Up),
+                    bn(KeyboardCode::Right),
+                ],
+            ])
+        };
 
         println!("Init completed");
 
@@ -137,12 +230,13 @@ mod app {
                 status_grid,
             },
             Local {
-                pa0,
+                button,
+                intra_rx,
+                intra_tx,
+                is_left_side,
                 led,
                 local_grid,
                 timer,
-                intra_tx,
-                intra_rx,
             },
             init::Monotonics(),
         )
@@ -160,31 +254,31 @@ mod app {
         }
     }
 
-    #[task(binds = TIM3, priority = 4, shared = [status_grid, usb_class], local = [local_grid, timer])]
+    #[task(binds = TIM3, priority = 4, local = [local_grid, timer, button, led, is_left_side])]
     fn local_tick(c: local_tick::Context) {
         c.local.timer.wait().ok();
 
-        for event in c.local.local_grid.get_events() {
-            handle_event::spawn(event).ok();
-        }
+        for mut event in c.local.local_grid.get_events() {
+            // Handle shift in coordinates
+            if !*c.local.is_left_side {
+                event.inp += 6;
+            };
 
-        // if c.local.pa0.is_low() {
-        //     c.local.led.set_low();
-        //     handle_event::spawn(ButtonStatusEvent::new(true, 0, 0)).ok();
-        // } else {
-        //     c.local.led.set_high();
-        // };
+            handle_event::spawn(event.clone()).ok();
+            send_event::spawn(event).ok();
+        }
 
         keyboard_tick::spawn().ok();
     }
 
-    #[task(binds = USART1, priority = 5, shared = [status_grid], local = [intra_rx, buf: [u8;4] = [0;4]])]
+    #[task(binds = USART1, priority = 5, local = [intra_rx, buf: [u8;4] = [0;4]])]
     fn rx(c: rx::Context) {
         let buf = c.local.buf;
 
         if let Ok(b) = c.local.intra_rx.read() {
             buf.rotate_left(1);
             buf[3] = b;
+            println!("Serial buf: {:?}", buf);
 
             if let Ok(event) = ButtonStatusEvent::try_from(&*buf) {
                 handle_event::spawn(event).ok();
@@ -192,7 +286,7 @@ mod app {
         }
     }
 
-    #[task(priority = 3, capacity = 8, shared = [status_grid], local = [intra_tx])]
+    #[task(priority = 3, capacity = 8, local = [intra_tx])]
     fn send_event(c: send_event::Context, event: ButtonStatusEvent) {
         println!("Sending event: {:?}", event);
         let buf: [u8; 4] = (&event).into();
@@ -200,11 +294,11 @@ mod app {
         tx.bwrite_all(&buf).and_then(|_| tx.bflush()).ok();
     }
 
-    #[task(priority = 3, capacity = 8, shared = [status_grid], local = [pa0, led])]
+    #[task(priority = 3, capacity = 8, shared = [status_grid])]
     fn handle_event(mut c: handle_event::Context, event: ButtonStatusEvent) {
         println!("Event: {:?}", event);
         c.shared.status_grid.lock(|status_grid| {
-            status_grid.set_pressed(event.inp, event.out, event.pressed);
+            status_grid.set_pressed(event.out, event.inp, event.pressed);
         })
     }
 
