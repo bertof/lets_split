@@ -9,6 +9,7 @@ mod app {
     use defmt::println;
     use keyboard_io::{
         buttons::{
+            shortcuts::{bl, bn},
             Button, ButtonAction, ButtonStatusEvent, GridState, LocalGrid, StatefulInputPin,
         },
         codes::KeyboardCode,
@@ -33,14 +34,10 @@ mod app {
     type InputPin = EPin<Input<PullUp>>;
     type OutputPin = EPin<Output<PushPull>>;
 
-    fn bn<E>(e: E) -> Button<E> {
-        Button::new(ButtonAction::Simple(e))
-    }
-
     // Shared resources go here
     #[shared]
     struct Shared {
-        status_grid: GridState<KeyboardCode, 4, 12>,
+        status_grid: GridState<KeyboardCode, 4, 12, 3>,
         usb_dev: UsbDevice,
         usb_class: UsbKeyboardClass,
     }
@@ -163,18 +160,54 @@ mod app {
         let status_grid = {
             GridState::new([
                 [
-                    bn(KeyboardCode::Escape),
-                    bn(KeyboardCode::Q),
-                    bn(KeyboardCode::W),
-                    bn(KeyboardCode::E),
-                    bn(KeyboardCode::R),
-                    bn(KeyboardCode::T),
-                    bn(KeyboardCode::Y),
-                    bn(KeyboardCode::U),
-                    bn(KeyboardCode::I),
-                    bn(KeyboardCode::O),
-                    bn(KeyboardCode::P),
-                    bn(KeyboardCode::BSpace),
+                    bl(
+                        KeyboardCode::Escape,
+                        [KeyboardCode::F1, KeyboardCode::Grave, Default::default()],
+                    ),
+                    bl(
+                        KeyboardCode::Q,
+                        [KeyboardCode::F2, KeyboardCode::Kb1, Default::default()],
+                    ),
+                    bl(
+                        KeyboardCode::W,
+                        [KeyboardCode::F3, KeyboardCode::Kb2, Default::default()],
+                    ),
+                    bl(
+                        KeyboardCode::E,
+                        [KeyboardCode::F4, KeyboardCode::Kb3, Default::default()],
+                    ),
+                    bl(
+                        KeyboardCode::R,
+                        [KeyboardCode::F5, KeyboardCode::Kb4, Default::default()],
+                    ),
+                    bl(
+                        KeyboardCode::T,
+                        [KeyboardCode::F6, KeyboardCode::Kb5, Default::default()],
+                    ),
+                    bl(
+                        KeyboardCode::Y,
+                        [KeyboardCode::F7, KeyboardCode::Kb6, Default::default()],
+                    ),
+                    bl(
+                        KeyboardCode::U,
+                        [KeyboardCode::F8, KeyboardCode::Kb7, Default::default()],
+                    ),
+                    bl(
+                        KeyboardCode::I,
+                        [KeyboardCode::F9, KeyboardCode::Kb8, Default::default()],
+                    ),
+                    bl(
+                        KeyboardCode::O,
+                        [KeyboardCode::F10, KeyboardCode::Kb9, Default::default()],
+                    ),
+                    bl(
+                        KeyboardCode::P,
+                        [KeyboardCode::F11, KeyboardCode::Kb0, Default::default()],
+                    ),
+                    bl(
+                        KeyboardCode::BSpace,
+                        [KeyboardCode::F12, Default::default(), Default::default()],
+                    ),
                 ],
                 [
                     bn(KeyboardCode::Tab),
@@ -208,20 +241,49 @@ mod app {
                     bn(KeyboardCode::LCtrl),
                     bn(KeyboardCode::LGui),
                     bn(KeyboardCode::LAlt),
-                    Button::new(ButtonAction::Unassigned),
-                    Button::new(ButtonAction::Unassigned),
+                    Button::new(ButtonAction::MomentaryLayer(0)),
+                    Button::new(ButtonAction::MomentaryLayer(1)),
                     bn(KeyboardCode::Space),
                     bn(KeyboardCode::Space),
-                    Button::new(ButtonAction::Unassigned),
-                    bn(KeyboardCode::Left),
-                    bn(KeyboardCode::Down),
-                    bn(KeyboardCode::Up),
-                    bn(KeyboardCode::Right),
+                    Button::new(ButtonAction::MomentaryLayer(2)),
+                    bl(
+                        KeyboardCode::Left,
+                        [
+                            KeyboardCode::MediaNextSong,
+                            Default::default(),
+                            Default::default(),
+                        ],
+                    ),
+                    bl(
+                        KeyboardCode::Down,
+                        [
+                            KeyboardCode::MediaStop,
+                            KeyboardCode::VolDown,
+                            KeyboardCode::PgDown,
+                        ],
+                    ),
+                    bl(
+                        KeyboardCode::Up,
+                        [
+                            KeyboardCode::MediaPlayPause,
+                            KeyboardCode::VolUp,
+                            KeyboardCode::PgUp,
+                        ],
+                    ),
+                    bl(
+                        KeyboardCode::Right,
+                        [
+                            KeyboardCode::MediaNextSong,
+                            Default::default(),
+                            Default::default(),
+                        ],
+                    ),
                 ],
             ])
         };
 
         println!("Init completed");
+        led.set_high();
 
         (
             Shared {
@@ -278,7 +340,7 @@ mod app {
         if let Ok(b) = c.local.intra_rx.read() {
             buf.rotate_left(1);
             buf[3] = b;
-            println!("Serial buf: {:?}", buf);
+            // println!("Serial buf: {:?}", buf);
 
             if let Ok(event) = ButtonStatusEvent::try_from(&*buf) {
                 handle_event::spawn(event).ok();

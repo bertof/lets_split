@@ -35,7 +35,7 @@ mod app {
     // Shared resources go here
     #[shared]
     struct Shared {
-        status_grid: GridState<KeyboardCode, 2, 2>,
+        status_grid: GridState<KeyboardCode, 2, 2, 0>,
         usb_dev: UsbDevice,
         usb_class: UsbKeyboardClass,
     }
