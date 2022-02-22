@@ -9,8 +9,8 @@ mod app {
     use defmt::println;
     use keyboard_io::{
         buttons::{
-            shortcuts::{bl, bn},
-            Button, ButtonAction, ButtonStatusEvent, GridState, LocalGrid, StatefulInputPin,
+            shortcuts::{bl, bs, row},
+            ButtonAction, ButtonStatusEvent, GridState, LocalGrid, StatefulInputPin,
         },
         codes::KeyboardCode,
         hid::{
@@ -159,126 +159,185 @@ mod app {
 
         let status_grid = {
             GridState::new([
-                [
+                row([
                     bl(
                         KeyboardCode::Escape,
-                        [KeyboardCode::F1, KeyboardCode::Grave, Default::default()],
+                        [KeyboardCode::Grave, KeyboardCode::F1, Default::default()],
                     ),
                     bl(
                         KeyboardCode::Q,
-                        [KeyboardCode::F2, KeyboardCode::Kb1, Default::default()],
+                        [KeyboardCode::Kb1, KeyboardCode::F2, KeyboardCode::Q],
                     ),
                     bl(
                         KeyboardCode::W,
-                        [KeyboardCode::F3, KeyboardCode::Kb2, Default::default()],
+                        [KeyboardCode::Kb2, KeyboardCode::F3, KeyboardCode::W],
                     ),
                     bl(
                         KeyboardCode::E,
-                        [KeyboardCode::F4, KeyboardCode::Kb3, Default::default()],
+                        [KeyboardCode::Kb3, KeyboardCode::F4, KeyboardCode::E],
                     ),
                     bl(
                         KeyboardCode::R,
-                        [KeyboardCode::F5, KeyboardCode::Kb4, Default::default()],
+                        [KeyboardCode::Kb4, KeyboardCode::F5, KeyboardCode::R],
                     ),
                     bl(
                         KeyboardCode::T,
-                        [KeyboardCode::F6, KeyboardCode::Kb5, Default::default()],
+                        [KeyboardCode::Kb5, KeyboardCode::F6, KeyboardCode::T],
                     ),
                     bl(
                         KeyboardCode::Y,
-                        [KeyboardCode::F7, KeyboardCode::Kb6, Default::default()],
+                        [KeyboardCode::Kb6, KeyboardCode::F7, KeyboardCode::Kp7],
                     ),
                     bl(
                         KeyboardCode::U,
-                        [KeyboardCode::F8, KeyboardCode::Kb7, Default::default()],
+                        [KeyboardCode::Kb7, KeyboardCode::F8, KeyboardCode::Kp8],
                     ),
                     bl(
                         KeyboardCode::I,
-                        [KeyboardCode::F9, KeyboardCode::Kb8, Default::default()],
+                        [KeyboardCode::Kb8, KeyboardCode::F9, KeyboardCode::Kp9],
                     ),
                     bl(
                         KeyboardCode::O,
-                        [KeyboardCode::F10, KeyboardCode::Kb9, Default::default()],
+                        [KeyboardCode::Kb9, KeyboardCode::F10, KeyboardCode::Minus],
                     ),
                     bl(
                         KeyboardCode::P,
-                        [KeyboardCode::F11, KeyboardCode::Kb0, Default::default()],
+                        [KeyboardCode::Kb0, KeyboardCode::F11, KeyboardCode::Equal],
                     ),
                     bl(
                         KeyboardCode::BSpace,
-                        [KeyboardCode::F12, Default::default(), Default::default()],
+                        [KeyboardCode::Delete, KeyboardCode::F12, KeyboardCode::Pause],
                     ),
-                ],
-                [
-                    bn(KeyboardCode::Tab),
-                    bn(KeyboardCode::A),
-                    bn(KeyboardCode::S),
-                    bn(KeyboardCode::D),
-                    bn(KeyboardCode::F),
-                    bn(KeyboardCode::G),
-                    bn(KeyboardCode::H),
-                    bn(KeyboardCode::J),
-                    bn(KeyboardCode::K),
-                    bn(KeyboardCode::L),
-                    bn(KeyboardCode::SColon),
-                    bn(KeyboardCode::Quote),
-                ],
-                [
-                    bn(KeyboardCode::LShift),
-                    bn(KeyboardCode::Z),
-                    bn(KeyboardCode::X),
-                    bn(KeyboardCode::C),
-                    bn(KeyboardCode::V),
-                    bn(KeyboardCode::B),
-                    bn(KeyboardCode::N),
-                    bn(KeyboardCode::M),
-                    bn(KeyboardCode::Comma),
-                    bn(KeyboardCode::Dot),
-                    bn(KeyboardCode::Slash),
-                    bn(KeyboardCode::Enter),
-                ],
-                [
-                    bn(KeyboardCode::LCtrl),
-                    bn(KeyboardCode::LGui),
-                    bn(KeyboardCode::LAlt),
-                    Button::new(ButtonAction::MomentaryLayer(0)),
-                    Button::new(ButtonAction::MomentaryLayer(1)),
-                    bn(KeyboardCode::Space),
-                    bn(KeyboardCode::Space),
-                    Button::new(ButtonAction::MomentaryLayer(2)),
+                ]),
+                row([
+                    bs(KeyboardCode::Tab),
+                    bs(KeyboardCode::A),
+                    bs(KeyboardCode::S),
+                    bs(KeyboardCode::D),
+                    bs(KeyboardCode::F),
+                    bs(KeyboardCode::G),
+                    bl(
+                        KeyboardCode::H,
+                        [KeyboardCode::H, KeyboardCode::H, KeyboardCode::Kp4],
+                    ),
+                    bl(
+                        KeyboardCode::J,
+                        [KeyboardCode::J, KeyboardCode::J, KeyboardCode::Kp5],
+                    ),
+                    bl(
+                        KeyboardCode::K,
+                        [KeyboardCode::LBracket, KeyboardCode::K, KeyboardCode::Kp6],
+                    ),
+                    bl(
+                        KeyboardCode::L,
+                        [
+                            KeyboardCode::RBracket,
+                            KeyboardCode::L,
+                            KeyboardCode::KpAsterisk,
+                        ],
+                    ),
+                    bl(
+                        KeyboardCode::SColon,
+                        [
+                            KeyboardCode::BSlash,
+                            KeyboardCode::SColon,
+                            KeyboardCode::KpSlash,
+                        ],
+                    ),
+                    bl(
+                        KeyboardCode::Quote,
+                        [
+                            KeyboardCode::NonUsBSlash,
+                            KeyboardCode::Quote,
+                            KeyboardCode::PScreen,
+                        ],
+                    ),
+                ]),
+                row([
+                    bs(KeyboardCode::LShift),
+                    bs(KeyboardCode::Z),
+                    bs(KeyboardCode::X),
+                    bs(KeyboardCode::C),
+                    bs(KeyboardCode::V),
+                    bs(KeyboardCode::B),
+                    bl(
+                        KeyboardCode::N,
+                        [KeyboardCode::N, KeyboardCode::N, KeyboardCode::Kp1],
+                    ),
+                    bl(
+                        KeyboardCode::M,
+                        [KeyboardCode::M, KeyboardCode::M, KeyboardCode::Kp2],
+                    ),
+                    bl(
+                        KeyboardCode::Comma,
+                        [KeyboardCode::Comma, KeyboardCode::Comma, KeyboardCode::Kp3],
+                    ),
+                    bl(
+                        KeyboardCode::Dot,
+                        [KeyboardCode::Dot, KeyboardCode::Dot, KeyboardCode::NumLock],
+                    ),
+                    bl(
+                        KeyboardCode::Slash,
+                        [
+                            KeyboardCode::Insert,
+                            KeyboardCode::Slash,
+                            KeyboardCode::Slash,
+                        ],
+                    ),
+                    bl(
+                        KeyboardCode::Enter,
+                        [
+                            KeyboardCode::Enter,
+                            KeyboardCode::Enter,
+                            KeyboardCode::KpEnter,
+                        ],
+                    ),
+                ]),
+                row([
+                    bs(KeyboardCode::LCtrl),
+                    bs(KeyboardCode::LGui),
+                    bs(KeyboardCode::LAlt),
+                    ButtonAction::MomentaryLayer(2),
+                    ButtonAction::MomentaryLayer(0),
+                    bs(KeyboardCode::Space),
+                    bl(
+                        KeyboardCode::Space,
+                        [KeyboardCode::Space, KeyboardCode::Space, KeyboardCode::Kp0],
+                    ),
+                    ButtonAction::MomentaryLayer(1),
                     bl(
                         KeyboardCode::Left,
                         [
+                            KeyboardCode::Home,
                             KeyboardCode::MediaNextSong,
-                            Default::default(),
-                            Default::default(),
+                            KeyboardCode::Menu,
                         ],
                     ),
                     bl(
                         KeyboardCode::Down,
                         [
+                            KeyboardCode::PgDown,
                             KeyboardCode::MediaStop,
                             KeyboardCode::VolDown,
-                            KeyboardCode::PgDown,
                         ],
                     ),
                     bl(
                         KeyboardCode::Up,
                         [
+                            KeyboardCode::PgUp,
                             KeyboardCode::MediaPlayPause,
                             KeyboardCode::VolUp,
-                            KeyboardCode::PgUp,
                         ],
                     ),
                     bl(
                         KeyboardCode::Right,
                         [
+                            KeyboardCode::End,
                             KeyboardCode::MediaNextSong,
-                            Default::default(),
-                            Default::default(),
+                            KeyboardCode::Mute,
                         ],
                     ),
-                ],
+                ]),
             ])
         };
 
