@@ -13,39 +13,46 @@
       let
         overlays = [ (import rust-overlay) ];
         pkgs = import nixpkgs { inherit system overlays; };
+        minBuildInputs = with pkgs; [
+          gcc-arm-embedded
+          (rust-bin.stable.latest.default.override {
+            targets = [ "x86_64-unknown-linux-gnu" "thumbv7em-none-eabihf" ];
+          })
+          stdenv.cc.cc.lib
+        ];
       in
       rec {
         packages = flake-utils.lib.flattenTree {
-          hello = pkgs.hello;
-          sample = pkgs.gitAndTools;
+          upload_usb = pkgs.writeShellScriptBin "upload_usb" ''
+            export PATH="${pkgs.lib.makeBinPath (minBuildInputs ++ [pkgs.dfu-util])}":$PATH
+            cargo build --release --bin ''${1:-split}
+            arm-none-eabi-objcopy -O binary target/thumbv7em-none-eabihf/release/split split.bin
+            sudo dfu-util -a 0 -s 0x8000000 -RD split.bin
+          '';
         };
+
 
         devShell = pkgs.mkShell {
           buildInputs = with pkgs; [
-            (rust-bin.stable.latest.default.override {
-              targets = [ "x86_64-unknown-linux-gnu" "thumbv7em-none-eabihf" ];
-            })
             bacon
             cargo-watch
-            cargo-embed
             cargo-outdated
-            stdenv.cc.cc.lib
-            gcc-arm-embedded
-            gdb-multitarget
+
+            # gdb-multitarget
 
             flip-link
             probe-run
             usbutils
-            screen
 
             git
-            cmake
+            # cmake
             minicom
-            openocd
-            expect
+            # expect
+
+            dfu-util
 
             # bashInteractive
-          ];
+          ] ++ minBuildInputs;
 
           depsBuildBuild = with pkgs; [ qemu ];
 
