@@ -162,7 +162,7 @@ mod app {
                 row([
                     bl(
                         KeyboardCode::Escape,
-                        [KeyboardCode::Grave, Default::default(), KeyboardCode::F1],
+                        [KeyboardCode::Grave, KeyboardCode::Escape, KeyboardCode::F1],
                     ),
                     bl(
                         KeyboardCode::Q,
@@ -186,15 +186,15 @@ mod app {
                     ),
                     bl(
                         KeyboardCode::Y,
-                        [KeyboardCode::Kb6, KeyboardCode::Kp7, KeyboardCode::F7],
+                        [KeyboardCode::Kb6, KeyboardCode::Y, KeyboardCode::F7],
                     ),
                     bl(
                         KeyboardCode::U,
-                        [KeyboardCode::Kb7, KeyboardCode::Kp8, KeyboardCode::F8],
+                        [KeyboardCode::Kb7, KeyboardCode::U, KeyboardCode::F8],
                     ),
                     bl(
                         KeyboardCode::I,
-                        [KeyboardCode::Kb8, KeyboardCode::Kp9, KeyboardCode::F9],
+                        [KeyboardCode::Kb8, KeyboardCode::I, KeyboardCode::F9],
                     ),
                     bl(
                         KeyboardCode::O,
@@ -216,32 +216,22 @@ mod app {
                     bs(KeyboardCode::D),
                     bs(KeyboardCode::F),
                     bs(KeyboardCode::G),
-                    bl(
-                        KeyboardCode::H,
-                        [KeyboardCode::H, KeyboardCode::H, KeyboardCode::Kp4],
-                    ),
-                    bl(
-                        KeyboardCode::J,
-                        [KeyboardCode::J, KeyboardCode::J, KeyboardCode::Kp5],
-                    ),
+                    bs(KeyboardCode::H),
+                    bs(KeyboardCode::J),
                     bl(
                         KeyboardCode::K,
-                        [KeyboardCode::LBracket, KeyboardCode::K, KeyboardCode::Kp6],
+                        [KeyboardCode::LBracket, KeyboardCode::K, KeyboardCode::K],
                     ),
                     bl(
                         KeyboardCode::L,
-                        [
-                            KeyboardCode::RBracket,
-                            KeyboardCode::L,
-                            KeyboardCode::KpAsterisk,
-                        ],
+                        [KeyboardCode::RBracket, KeyboardCode::L, KeyboardCode::L],
                     ),
                     bl(
                         KeyboardCode::SColon,
                         [
                             KeyboardCode::BSlash,
                             KeyboardCode::SColon,
-                            KeyboardCode::KpSlash,
+                            KeyboardCode::SColon,
                         ],
                     ),
                     bl(
@@ -260,38 +250,26 @@ mod app {
                     bs(KeyboardCode::C),
                     bs(KeyboardCode::V),
                     bs(KeyboardCode::B),
-                    bl(
-                        KeyboardCode::N,
-                        [KeyboardCode::N, KeyboardCode::N, KeyboardCode::Kp1],
-                    ),
-                    bl(
-                        KeyboardCode::M,
-                        [KeyboardCode::M, KeyboardCode::M, KeyboardCode::Kp2],
-                    ),
-                    bl(
-                        KeyboardCode::Comma,
-                        [KeyboardCode::Comma, KeyboardCode::Comma, KeyboardCode::Kp3],
-                    ),
+                    bs(KeyboardCode::N),
+                    bs(KeyboardCode::M),
+                    bs(KeyboardCode::Comma),
                     bl(
                         KeyboardCode::Dot,
-                        [KeyboardCode::Dot, KeyboardCode::Dot, KeyboardCode::NumLock],
+                        [
+                            KeyboardCode::Dot,
+                            KeyboardCode::Dot,
+                            KeyboardCode::Application,
+                        ],
                     ),
                     bl(
                         KeyboardCode::Slash,
                         [
+                            KeyboardCode::Slash,
+                            KeyboardCode::Slash,
                             KeyboardCode::Insert,
-                            KeyboardCode::Slash,
-                            KeyboardCode::Slash,
                         ],
                     ),
-                    bl(
-                        KeyboardCode::Enter,
-                        [
-                            KeyboardCode::Enter,
-                            KeyboardCode::Enter,
-                            KeyboardCode::KpEnter,
-                        ],
-                    ),
+                    bs(KeyboardCode::Enter),
                 ]),
                 row([
                     bs(KeyboardCode::LCtrl),
@@ -300,10 +278,7 @@ mod app {
                     ButtonAction::MomentaryLayer(2),
                     ButtonAction::MomentaryLayer(0),
                     bs(KeyboardCode::Space),
-                    bl(
-                        KeyboardCode::Space,
-                        [KeyboardCode::Space, KeyboardCode::Space, KeyboardCode::Kp0],
-                    ),
+                    bs(KeyboardCode::Space),
                     ButtonAction::MomentaryLayer(1),
                     bl(
                         KeyboardCode::Left,
