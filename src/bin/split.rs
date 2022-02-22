@@ -284,7 +284,7 @@ mod app {
                         KeyboardCode::Left,
                         [
                             KeyboardCode::Home,
-                            KeyboardCode::MediaNextSong,
+                            KeyboardCode::MediaPreviousSong,
                             KeyboardCode::Menu,
                         ],
                     ),
