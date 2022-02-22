@@ -162,51 +162,51 @@ mod app {
                 row([
                     bl(
                         KeyboardCode::Escape,
-                        [KeyboardCode::Grave, KeyboardCode::F1, Default::default()],
+                        [KeyboardCode::Grave, Default::default(), KeyboardCode::F1],
                     ),
                     bl(
                         KeyboardCode::Q,
-                        [KeyboardCode::Kb1, KeyboardCode::F2, KeyboardCode::Q],
+                        [KeyboardCode::Kb1, KeyboardCode::Q, KeyboardCode::F2],
                     ),
                     bl(
                         KeyboardCode::W,
-                        [KeyboardCode::Kb2, KeyboardCode::F3, KeyboardCode::W],
+                        [KeyboardCode::Kb2, KeyboardCode::W, KeyboardCode::F3],
                     ),
                     bl(
                         KeyboardCode::E,
-                        [KeyboardCode::Kb3, KeyboardCode::F4, KeyboardCode::E],
+                        [KeyboardCode::Kb3, KeyboardCode::E, KeyboardCode::F4],
                     ),
                     bl(
                         KeyboardCode::R,
-                        [KeyboardCode::Kb4, KeyboardCode::F5, KeyboardCode::R],
+                        [KeyboardCode::Kb4, KeyboardCode::R, KeyboardCode::F5],
                     ),
                     bl(
                         KeyboardCode::T,
-                        [KeyboardCode::Kb5, KeyboardCode::F6, KeyboardCode::T],
+                        [KeyboardCode::Kb5, KeyboardCode::T, KeyboardCode::F6],
                     ),
                     bl(
                         KeyboardCode::Y,
-                        [KeyboardCode::Kb6, KeyboardCode::F7, KeyboardCode::Kp7],
+                        [KeyboardCode::Kb6, KeyboardCode::Kp7, KeyboardCode::F7],
                     ),
                     bl(
                         KeyboardCode::U,
-                        [KeyboardCode::Kb7, KeyboardCode::F8, KeyboardCode::Kp8],
+                        [KeyboardCode::Kb7, KeyboardCode::Kp8, KeyboardCode::F8],
                     ),
                     bl(
                         KeyboardCode::I,
-                        [KeyboardCode::Kb8, KeyboardCode::F9, KeyboardCode::Kp9],
+                        [KeyboardCode::Kb8, KeyboardCode::Kp9, KeyboardCode::F9],
                     ),
                     bl(
                         KeyboardCode::O,
-                        [KeyboardCode::Kb9, KeyboardCode::F10, KeyboardCode::Minus],
+                        [KeyboardCode::Kb9, KeyboardCode::Minus, KeyboardCode::F10],
                     ),
                     bl(
                         KeyboardCode::P,
-                        [KeyboardCode::Kb0, KeyboardCode::F11, KeyboardCode::Equal],
+                        [KeyboardCode::Kb0, KeyboardCode::Equal, KeyboardCode::F11],
                     ),
                     bl(
                         KeyboardCode::BSpace,
-                        [KeyboardCode::Delete, KeyboardCode::F12, KeyboardCode::Pause],
+                        [KeyboardCode::Delete, KeyboardCode::Pause, KeyboardCode::F12],
                     ),
                 ]),
                 row([
