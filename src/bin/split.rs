@@ -272,10 +272,10 @@ mod app {
                     bs(KeyboardCode::Enter),
                 ]),
                 row([
+                    ButtonAction::MomentaryLayer(2),
                     bs(KeyboardCode::LCtrl),
                     bs(KeyboardCode::LGui),
                     bs(KeyboardCode::LAlt),
-                    ButtonAction::MomentaryLayer(2),
                     ButtonAction::MomentaryLayer(0),
                     bs(KeyboardCode::Space),
                     bs(KeyboardCode::Space),
