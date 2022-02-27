@@ -220,25 +220,25 @@ mod app {
                     bs(KeyboardCode::J),
                     bl(
                         KeyboardCode::K,
-                        [KeyboardCode::LBracket, KeyboardCode::K, KeyboardCode::K],
+                        [KeyboardCode::K, KeyboardCode::LBracket, KeyboardCode::K],
                     ),
                     bl(
                         KeyboardCode::L,
-                        [KeyboardCode::RBracket, KeyboardCode::L, KeyboardCode::L],
+                        [KeyboardCode::L, KeyboardCode::RBracket, KeyboardCode::L],
                     ),
                     bl(
                         KeyboardCode::SColon,
                         [
-                            KeyboardCode::BSlash,
                             KeyboardCode::SColon,
+                            KeyboardCode::BSlash,
                             KeyboardCode::SColon,
                         ],
                     ),
                     bl(
                         KeyboardCode::Quote,
                         [
-                            KeyboardCode::NonUsBSlash,
                             KeyboardCode::Quote,
+                            KeyboardCode::NonUsBSlash,
                             KeyboardCode::PScreen,
                         ],
                     ),
