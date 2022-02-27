@@ -206,7 +206,7 @@ mod app {
                     ),
                     bl(
                         KeyboardCode::BSpace,
-                        [KeyboardCode::Delete, KeyboardCode::Pause, KeyboardCode::F12],
+                        [KeyboardCode::Pause, KeyboardCode::Delete, KeyboardCode::F12],
                     ),
                 ]),
                 row([
