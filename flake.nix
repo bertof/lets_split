@@ -35,15 +35,8 @@
             arm-none-eabi-objcopy -O binary target/thumbv7em-none-eabihf/release/split split.bin
 
             echo Flashing pads until stop
-            until sudo dfu-util -a 0 -s 0x8000000 -RD split.bin ; do
-              echo Retrying in 5 seconds
-              sleep 5
-            done
-
-            echo Fashing second pad in 5 seconds
-            sleep 5
-
-            until sudo dfu-util -a 0 -s 0x8000000 -RD split.bin ; do
+            while true ; do
+              sudo dfu-util -a 0 -s 0x8000000 -RD split.bin
               echo Retrying in 5 seconds
               sleep 5
             done
