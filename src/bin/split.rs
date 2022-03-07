@@ -178,26 +178,26 @@ mod app {
                     bs(KeyboardCode::BSpace).add_layer(KeyboardCode::Delete, 0),
                 ]),
                 row([
-                    bs(KeyboardCode::Tab).add_layer(KeyboardCode::F1, 0),
-                    bs(KeyboardCode::A).add_layer(KeyboardCode::F2, 0),
-                    bs(KeyboardCode::S).add_layer(KeyboardCode::F3, 0),
-                    bs(KeyboardCode::D).add_layer(KeyboardCode::F4, 0),
-                    bs(KeyboardCode::F).add_layer(KeyboardCode::F5, 0),
-                    bs(KeyboardCode::G).add_layer(KeyboardCode::F6, 0),
-                    bs(KeyboardCode::H).add_layer(KeyboardCode::F7, 0),
-                    bs(KeyboardCode::J).add_layer(KeyboardCode::F8, 0),
+                    bs(KeyboardCode::Tab).add_layer(KeyboardCode::F1, 1),
+                    bs(KeyboardCode::A).add_layer(KeyboardCode::F2, 1),
+                    bs(KeyboardCode::S).add_layer(KeyboardCode::F3, 1),
+                    bs(KeyboardCode::D).add_layer(KeyboardCode::F4, 1),
+                    bs(KeyboardCode::F).add_layer(KeyboardCode::F5, 1),
+                    bs(KeyboardCode::G).add_layer(KeyboardCode::F6, 1),
+                    bs(KeyboardCode::H).add_layer(KeyboardCode::F7, 1),
+                    bs(KeyboardCode::J).add_layer(KeyboardCode::F8, 1),
                     bs(KeyboardCode::K)
-                        .add_layer(KeyboardCode::F9, 0)
-                        .add_layer(KeyboardCode::LBracket, 1),
+                        .add_layer(KeyboardCode::LBracket, 0)
+                        .add_layer(KeyboardCode::F9, 1),
                     bs(KeyboardCode::L)
-                        .add_layer(KeyboardCode::F10, 0)
-                        .add_layer(KeyboardCode::RBracket, 1),
+                        .add_layer(KeyboardCode::RBracket, 0)
+                        .add_layer(KeyboardCode::F10, 1),
                     bs(KeyboardCode::SColon)
-                        .add_layer(KeyboardCode::F11, 0)
-                        .add_layer(KeyboardCode::BSlash, 1),
+                        .add_layer(KeyboardCode::BSlash, 0)
+                        .add_layer(KeyboardCode::F11, 1),
                     bs(KeyboardCode::Quote)
-                        .add_layer(KeyboardCode::F12, 0)
-                        .add_layer(KeyboardCode::NonUsBSlash, 1),
+                        .add_layer(KeyboardCode::NonUsBSlash, 0)
+                        .add_layer(KeyboardCode::F12, 1),
                 ]),
                 row([
                     bs(KeyboardCode::LShift),
