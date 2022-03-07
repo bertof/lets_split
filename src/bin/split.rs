@@ -9,7 +9,7 @@ mod app {
     use defmt::println;
     use keyboard_io::{
         buttons::{
-            shortcuts::{bl, bs, row},
+            shortcuts::{bs, row},
             ButtonAction, ButtonStatusEvent, GridState, LocalGrid, StatefulInputPin,
         },
         codes::KeyboardCode,
@@ -160,88 +160,44 @@ mod app {
         let status_grid = {
             GridState::new([
                 row([
-                    bl(
-                        KeyboardCode::Escape,
-                        [KeyboardCode::Grave, KeyboardCode::Escape, KeyboardCode::F1],
-                    ),
-                    bl(
-                        KeyboardCode::Q,
-                        [KeyboardCode::Kb1, KeyboardCode::Q, KeyboardCode::F2],
-                    ),
-                    bl(
-                        KeyboardCode::W,
-                        [KeyboardCode::Kb2, KeyboardCode::W, KeyboardCode::F3],
-                    ),
-                    bl(
-                        KeyboardCode::E,
-                        [KeyboardCode::Kb3, KeyboardCode::E, KeyboardCode::F4],
-                    ),
-                    bl(
-                        KeyboardCode::R,
-                        [KeyboardCode::Kb4, KeyboardCode::R, KeyboardCode::F5],
-                    ),
-                    bl(
-                        KeyboardCode::T,
-                        [KeyboardCode::Kb5, KeyboardCode::T, KeyboardCode::F6],
-                    ),
-                    bl(
-                        KeyboardCode::Y,
-                        [KeyboardCode::Kb6, KeyboardCode::Y, KeyboardCode::F7],
-                    ),
-                    bl(
-                        KeyboardCode::U,
-                        [KeyboardCode::Kb7, KeyboardCode::U, KeyboardCode::F8],
-                    ),
-                    bl(
-                        KeyboardCode::I,
-                        [KeyboardCode::Kb8, KeyboardCode::I, KeyboardCode::F9],
-                    ),
-                    bl(
-                        KeyboardCode::O,
-                        [KeyboardCode::Kb9, KeyboardCode::Minus, KeyboardCode::F10],
-                    ),
-                    bl(
-                        KeyboardCode::P,
-                        [KeyboardCode::Kb0, KeyboardCode::Equal, KeyboardCode::F11],
-                    ),
-                    bl(
-                        KeyboardCode::BSpace,
-                        [KeyboardCode::Pause, KeyboardCode::Delete, KeyboardCode::F12],
-                    ),
+                    bs(KeyboardCode::Escape).add_layer(KeyboardCode::Grave, 0),
+                    bs(KeyboardCode::Q).add_layer(KeyboardCode::Kb1, 0),
+                    bs(KeyboardCode::W).add_layer(KeyboardCode::Kb2, 0),
+                    bs(KeyboardCode::E).add_layer(KeyboardCode::Kb3, 0),
+                    bs(KeyboardCode::R).add_layer(KeyboardCode::Kb4, 0),
+                    bs(KeyboardCode::T).add_layer(KeyboardCode::Kb5, 0),
+                    bs(KeyboardCode::Y).add_layer(KeyboardCode::Kb6, 0),
+                    bs(KeyboardCode::U).add_layer(KeyboardCode::Kb7, 0),
+                    bs(KeyboardCode::I).add_layer(KeyboardCode::Kb8, 0),
+                    bs(KeyboardCode::O)
+                        .add_layer(KeyboardCode::Kb9, 0)
+                        .add_layer(KeyboardCode::Minus, 1),
+                    bs(KeyboardCode::P)
+                        .add_layer(KeyboardCode::Kb0, 0)
+                        .add_layer(KeyboardCode::Equal, 1),
+                    bs(KeyboardCode::BSpace).add_layer(KeyboardCode::Delete, 0),
                 ]),
                 row([
-                    bs(KeyboardCode::Tab),
-                    bs(KeyboardCode::A),
-                    bs(KeyboardCode::S),
-                    bs(KeyboardCode::D),
-                    bs(KeyboardCode::F),
-                    bs(KeyboardCode::G),
-                    bs(KeyboardCode::H),
-                    bs(KeyboardCode::J),
-                    bl(
-                        KeyboardCode::K,
-                        [KeyboardCode::K, KeyboardCode::LBracket, KeyboardCode::K],
-                    ),
-                    bl(
-                        KeyboardCode::L,
-                        [KeyboardCode::L, KeyboardCode::RBracket, KeyboardCode::L],
-                    ),
-                    bl(
-                        KeyboardCode::SColon,
-                        [
-                            KeyboardCode::SColon,
-                            KeyboardCode::BSlash,
-                            KeyboardCode::SColon,
-                        ],
-                    ),
-                    bl(
-                        KeyboardCode::Quote,
-                        [
-                            KeyboardCode::Quote,
-                            KeyboardCode::NonUsBSlash,
-                            KeyboardCode::PScreen,
-                        ],
-                    ),
+                    bs(KeyboardCode::Tab).add_layer(KeyboardCode::F1, 0),
+                    bs(KeyboardCode::A).add_layer(KeyboardCode::F2, 0),
+                    bs(KeyboardCode::S).add_layer(KeyboardCode::F3, 0),
+                    bs(KeyboardCode::D).add_layer(KeyboardCode::F4, 0),
+                    bs(KeyboardCode::F).add_layer(KeyboardCode::F5, 0),
+                    bs(KeyboardCode::G).add_layer(KeyboardCode::F6, 0),
+                    bs(KeyboardCode::H).add_layer(KeyboardCode::F7, 0),
+                    bs(KeyboardCode::J).add_layer(KeyboardCode::F8, 0),
+                    bs(KeyboardCode::K)
+                        .add_layer(KeyboardCode::F9, 0)
+                        .add_layer(KeyboardCode::LBracket, 1),
+                    bs(KeyboardCode::L)
+                        .add_layer(KeyboardCode::F10, 0)
+                        .add_layer(KeyboardCode::RBracket, 1),
+                    bs(KeyboardCode::SColon)
+                        .add_layer(KeyboardCode::F11, 0)
+                        .add_layer(KeyboardCode::BSlash, 1),
+                    bs(KeyboardCode::Quote)
+                        .add_layer(KeyboardCode::F12, 0)
+                        .add_layer(KeyboardCode::NonUsBSlash, 1),
                 ]),
                 row([
                     bs(KeyboardCode::LShift),
@@ -252,66 +208,30 @@ mod app {
                     bs(KeyboardCode::B),
                     bs(KeyboardCode::N),
                     bs(KeyboardCode::M),
-                    bs(KeyboardCode::Comma),
-                    bl(
-                        KeyboardCode::Dot,
-                        [
-                            KeyboardCode::Dot,
-                            KeyboardCode::Dot,
-                            KeyboardCode::Application,
-                        ],
-                    ),
-                    bl(
-                        KeyboardCode::Slash,
-                        [
-                            KeyboardCode::Slash,
-                            KeyboardCode::Slash,
-                            KeyboardCode::Insert,
-                        ],
-                    ),
+                    bs(KeyboardCode::Comma).add_layer(KeyboardCode::Menu, 1),
+                    bs(KeyboardCode::Dot).add_layer(KeyboardCode::Application, 1),
+                    bs(KeyboardCode::Slash).add_layer(KeyboardCode::Insert, 1),
                     bs(KeyboardCode::Enter),
                 ]),
                 row([
-                    bs(KeyboardCode::LCtrl),
-                    bs(KeyboardCode::LGui),
-                    bs(KeyboardCode::LAlt),
                     ButtonAction::MomentaryLayer(2),
+                    bs(KeyboardCode::LCtrl),
+                    bs(KeyboardCode::LAlt),
+                    bs(KeyboardCode::LGui),
                     ButtonAction::MomentaryLayer(0),
                     bs(KeyboardCode::Space),
                     bs(KeyboardCode::Space),
                     ButtonAction::MomentaryLayer(1),
-                    bl(
-                        KeyboardCode::Left,
-                        [
-                            KeyboardCode::Home,
-                            KeyboardCode::MediaPreviousSong,
-                            KeyboardCode::Menu,
-                        ],
-                    ),
-                    bl(
-                        KeyboardCode::Down,
-                        [
-                            KeyboardCode::PgDown,
-                            KeyboardCode::MediaStop,
-                            KeyboardCode::VolDown,
-                        ],
-                    ),
-                    bl(
-                        KeyboardCode::Up,
-                        [
-                            KeyboardCode::PgUp,
-                            KeyboardCode::MediaPlayPause,
-                            KeyboardCode::VolUp,
-                        ],
-                    ),
-                    bl(
-                        KeyboardCode::Right,
-                        [
-                            KeyboardCode::End,
-                            KeyboardCode::MediaNextSong,
-                            KeyboardCode::Mute,
-                        ],
-                    ),
+                    bs(KeyboardCode::Left).add_layer(KeyboardCode::Home, 1),
+                    bs(KeyboardCode::Down)
+                        .add_layer(KeyboardCode::VolDown, 0)
+                        .add_layer(KeyboardCode::PgDown, 1),
+                    bs(KeyboardCode::Up)
+                        .add_layer(KeyboardCode::VolUp, 0)
+                        .add_layer(KeyboardCode::PgUp, 1),
+                    bs(KeyboardCode::Right)
+                        .add_layer(KeyboardCode::Mute, 0)
+                        .add_layer(KeyboardCode::End, 1),
                 ]),
             ])
         };
