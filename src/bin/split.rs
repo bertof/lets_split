@@ -214,8 +214,8 @@ mod app {
                     bs(KeyboardCode::Enter),
                 ]),
                 row([
-                    ButtonAction::MomentaryLayer(2),
                     bs(KeyboardCode::LCtrl),
+                    ButtonAction::MomentaryLayer(2),
                     bs(KeyboardCode::LAlt),
                     bs(KeyboardCode::LGui),
                     ButtonAction::MomentaryLayer(0),
