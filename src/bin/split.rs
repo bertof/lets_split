@@ -176,8 +176,8 @@ mod app {
                         .add_layer(KeyboardCode::Kb0, 0)
                         .add_layer(KeyboardCode::Equal, 1),
                     bs(KeyboardCode::BSpace)
-                        .add_layer(KeyboardCode::Delete, 0)
-                        .add_layer(KeyboardCode::PScreen, 1),
+                        .add_layer(KeyboardCode::PScreen, 0)
+                        .add_layer(KeyboardCode::Delete, 1),
                 ]),
                 row([
                     bs(KeyboardCode::Tab).add_layer(KeyboardCode::F1, 1),
