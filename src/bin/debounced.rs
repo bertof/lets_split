@@ -7,10 +7,7 @@ use lets_split as _; // global logger + panicking-behavior + memory layout
 mod app {
     use core::iter;
     use keyboard_io::{
-        codes::KeyboardCode,
-        debouncer::DebouncedPin,
-        hid::{keyboard::KeyboardReport, PID, VID},
-        prelude::*,
+        codes::KeyboardCode, debouncer::DebouncedPin, hid::keyboard::KeyboardReport, prelude::*,
     };
     use stm32f4xx_hal::{
         gpio::{EPin, Input, PullUp},
@@ -19,6 +16,7 @@ mod app {
         prelude::*,
         timer,
     };
+    use usb_device::test_class::{PID, VID};
 
     type UsbKeyboardClass = HIDClass<'static, UsbBusType>;
     type UsbDevice = keyboard_io::prelude::UsbDevice<'static, UsbBusType>;

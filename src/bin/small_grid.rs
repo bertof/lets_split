@@ -12,10 +12,7 @@ mod app {
         buttons::{Button, ButtonAction, ButtonStatusEvent, GridState, LocalGrid},
         codes::KeyboardCode,
         // debouncer::DebouncedPin,
-        hid::{
-            keyboard::{KeyboardReport, LedStatus},
-            PID, VID,
-        },
+        hid::keyboard::{KeyboardReport, LedStatus},
         prelude::*,
     };
     use stm32f4xx_hal::{
@@ -25,6 +22,7 @@ mod app {
         prelude::*,
         timer,
     };
+    use usb_device::test_class::{PID, VID};
 
     type UsbKeyboardClass = HIDClass<'static, UsbBusType>;
     type UsbDevice = keyboard_io::prelude::UsbDevice<'static, UsbBusType>;

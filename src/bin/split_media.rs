@@ -12,7 +12,7 @@ mod app {
             shortcuts::{bs, row},
             ButtonAction, ButtonStatusEvent, GridState, LocalGrid, StatefulInputPin,
         },
-        codes::KeyboardCode,
+        codes::{KeyboardCode, MediaKey},
         hid::keyboard::{KeyboardReport, LedStatus},
         prelude::{HIDClass, PinState, SerializedDescriptor, UsbDeviceBuilder, UsbVidPid},
     };
@@ -34,10 +34,38 @@ mod app {
     type InputPin = EPin<Input<PullUp>>;
     type OutputPin = EPin<Output<PushPull>>;
 
+    #[derive(Debug, Clone, Copy)]
+    pub enum KbEvent {
+        K(KeyboardCode),
+        M(MediaKey),
+    }
+
+    impl TryFrom<KbEvent> for KeyboardCode {
+        type Error = ();
+
+        fn try_from(value: KbEvent) -> Result<Self, Self::Error> {
+            match value {
+                KbEvent::K(k) => Ok(k),
+                KbEvent::M(_) => Err(()),
+            }
+        }
+    }
+
+    impl TryFrom<KbEvent> for MediaKey {
+        type Error = ();
+
+        fn try_from(value: KbEvent) -> Result<Self, Self::Error> {
+            match value {
+                KbEvent::K(_) => Err(()),
+                KbEvent::M(m) => Ok(m),
+            }
+        }
+    }
+
     // Shared resources go here
     #[shared]
     struct Shared {
-        status_grid: GridState<KeyboardCode, 4, 12, 3>,
+        status_grid: GridState<KbEvent, 4, 12, 3>,
         usb_dev: UsbDevice,
         usb_class: UsbKeyboardClass,
     }
@@ -160,80 +188,83 @@ mod app {
         let status_grid = {
             GridState::new([
                 row([
-                    bs(KeyboardCode::Escape).add_layer(KeyboardCode::Grave, 0),
-                    bs(KeyboardCode::Q).add_layer(KeyboardCode::Kb1, 0),
-                    bs(KeyboardCode::W).add_layer(KeyboardCode::Kb2, 0),
-                    bs(KeyboardCode::E).add_layer(KeyboardCode::Kb3, 0),
-                    bs(KeyboardCode::R).add_layer(KeyboardCode::Kb4, 0),
-                    bs(KeyboardCode::T).add_layer(KeyboardCode::Kb5, 0),
-                    bs(KeyboardCode::Y).add_layer(KeyboardCode::Kb6, 0),
-                    bs(KeyboardCode::U).add_layer(KeyboardCode::Kb7, 0),
-                    bs(KeyboardCode::I).add_layer(KeyboardCode::Kb8, 0),
-                    bs(KeyboardCode::O)
-                        .add_layer(KeyboardCode::Kb9, 0)
-                        .add_layer(KeyboardCode::Minus, 1),
-                    bs(KeyboardCode::P)
-                        .add_layer(KeyboardCode::Kb0, 0)
-                        .add_layer(KeyboardCode::Equal, 1),
-                    bs(KeyboardCode::BSpace)
-                        .add_layer(KeyboardCode::Delete, 1)
-                        .add_layer(KeyboardCode::PScreen, 2),
+                    bs(KbEvent::K(KeyboardCode::Escape))
+                        .add_layer(KbEvent::K(KeyboardCode::Grave), 0),
+                    bs(KbEvent::K(KeyboardCode::Q)).add_layer(KbEvent::K(KeyboardCode::Kb1), 0),
+                    bs(KbEvent::K(KeyboardCode::W)).add_layer(KbEvent::K(KeyboardCode::Kb2), 0),
+                    bs(KbEvent::K(KeyboardCode::E)).add_layer(KbEvent::K(KeyboardCode::Kb3), 0),
+                    bs(KbEvent::K(KeyboardCode::R)).add_layer(KbEvent::K(KeyboardCode::Kb4), 0),
+                    bs(KbEvent::K(KeyboardCode::T)).add_layer(KbEvent::K(KeyboardCode::Kb5), 0),
+                    bs(KbEvent::K(KeyboardCode::Y)).add_layer(KbEvent::K(KeyboardCode::Kb6), 0),
+                    bs(KbEvent::K(KeyboardCode::U)).add_layer(KbEvent::K(KeyboardCode::Kb7), 0),
+                    bs(KbEvent::K(KeyboardCode::I)).add_layer(KbEvent::K(KeyboardCode::Kb8), 0),
+                    bs(KbEvent::K(KeyboardCode::O))
+                        .add_layer(KbEvent::K(KeyboardCode::Kb9), 0)
+                        .add_layer(KbEvent::K(KeyboardCode::Minus), 1),
+                    bs(KbEvent::K(KeyboardCode::P))
+                        .add_layer(KbEvent::K(KeyboardCode::Kb0), 0)
+                        .add_layer(KbEvent::K(KeyboardCode::Equal), 1),
+                    bs(KbEvent::K(KeyboardCode::BSpace))
+                        .add_layer(KbEvent::K(KeyboardCode::Delete), 1)
+                        .add_layer(KbEvent::K(KeyboardCode::PScreen), 2),
                 ]),
                 row([
-                    bs(KeyboardCode::Tab).add_layer(KeyboardCode::F1, 1),
-                    bs(KeyboardCode::A).add_layer(KeyboardCode::F2, 1),
-                    bs(KeyboardCode::S).add_layer(KeyboardCode::F3, 1),
-                    bs(KeyboardCode::D).add_layer(KeyboardCode::F4, 1),
-                    bs(KeyboardCode::F).add_layer(KeyboardCode::F5, 1),
-                    bs(KeyboardCode::G).add_layer(KeyboardCode::F6, 1),
-                    bs(KeyboardCode::H).add_layer(KeyboardCode::F7, 1),
-                    bs(KeyboardCode::J).add_layer(KeyboardCode::F8, 1),
-                    bs(KeyboardCode::K)
-                        .add_layer(KeyboardCode::LBracket, 0)
-                        .add_layer(KeyboardCode::F9, 1),
-                    bs(KeyboardCode::L)
-                        .add_layer(KeyboardCode::RBracket, 0)
-                        .add_layer(KeyboardCode::F10, 1),
-                    bs(KeyboardCode::SColon)
-                        .add_layer(KeyboardCode::BSlash, 0)
-                        .add_layer(KeyboardCode::F11, 1),
-                    bs(KeyboardCode::Quote)
-                        .add_layer(KeyboardCode::NonUsBSlash, 0)
-                        .add_layer(KeyboardCode::F12, 1),
+                    bs(KbEvent::K(KeyboardCode::Tab)).add_layer(KbEvent::K(KeyboardCode::F1), 1),
+                    bs(KbEvent::K(KeyboardCode::A)).add_layer(KbEvent::K(KeyboardCode::F2), 1),
+                    bs(KbEvent::K(KeyboardCode::S)).add_layer(KbEvent::K(KeyboardCode::F3), 1),
+                    bs(KbEvent::K(KeyboardCode::D)).add_layer(KbEvent::K(KeyboardCode::F4), 1),
+                    bs(KbEvent::K(KeyboardCode::F)).add_layer(KbEvent::K(KeyboardCode::F5), 1),
+                    bs(KbEvent::K(KeyboardCode::G)).add_layer(KbEvent::K(KeyboardCode::F6), 1),
+                    bs(KbEvent::K(KeyboardCode::H)).add_layer(KbEvent::K(KeyboardCode::F7), 1),
+                    bs(KbEvent::K(KeyboardCode::J)).add_layer(KbEvent::K(KeyboardCode::F8), 1),
+                    bs(KbEvent::K(KeyboardCode::K))
+                        .add_layer(KbEvent::K(KeyboardCode::LBracket), 0)
+                        .add_layer(KbEvent::K(KeyboardCode::F9), 1),
+                    bs(KbEvent::K(KeyboardCode::L))
+                        .add_layer(KbEvent::K(KeyboardCode::RBracket), 0)
+                        .add_layer(KbEvent::K(KeyboardCode::F10), 1),
+                    bs(KbEvent::K(KeyboardCode::SColon))
+                        .add_layer(KbEvent::K(KeyboardCode::BSlash), 0)
+                        .add_layer(KbEvent::K(KeyboardCode::F11), 1),
+                    bs(KbEvent::K(KeyboardCode::Quote))
+                        .add_layer(KbEvent::K(KeyboardCode::NonUsBSlash), 0)
+                        .add_layer(KbEvent::K(KeyboardCode::F12), 1),
                 ]),
                 row([
-                    bs(KeyboardCode::LShift),
-                    bs(KeyboardCode::Z),
-                    bs(KeyboardCode::X),
-                    bs(KeyboardCode::C),
-                    bs(KeyboardCode::V),
-                    bs(KeyboardCode::B),
-                    bs(KeyboardCode::N),
-                    bs(KeyboardCode::M),
-                    bs(KeyboardCode::Comma).add_layer(KeyboardCode::Menu, 1),
-                    bs(KeyboardCode::Dot).add_layer(KeyboardCode::RCtrl, 1),
-                    bs(KeyboardCode::Slash).add_layer(KeyboardCode::Insert, 1),
-                    bs(KeyboardCode::Enter),
+                    bs(KbEvent::K(KeyboardCode::LShift)),
+                    bs(KbEvent::K(KeyboardCode::Z)),
+                    bs(KbEvent::K(KeyboardCode::X)),
+                    bs(KbEvent::K(KeyboardCode::C)),
+                    bs(KbEvent::K(KeyboardCode::V)),
+                    bs(KbEvent::K(KeyboardCode::B)),
+                    bs(KbEvent::K(KeyboardCode::N)),
+                    bs(KbEvent::K(KeyboardCode::M)),
+                    bs(KbEvent::K(KeyboardCode::Comma))
+                        .add_layer(KbEvent::K(KeyboardCode::Menu), 1),
+                    bs(KbEvent::K(KeyboardCode::Dot)).add_layer(KbEvent::K(KeyboardCode::RCtrl), 1),
+                    bs(KbEvent::K(KeyboardCode::Slash))
+                        .add_layer(KbEvent::K(KeyboardCode::Insert), 1),
+                    bs(KbEvent::K(KeyboardCode::Enter)),
                 ]),
                 row([
-                    bs(KeyboardCode::LCtrl),
+                    bs(KbEvent::K(KeyboardCode::LCtrl)),
                     ButtonAction::MomentaryLayer(2),
-                    bs(KeyboardCode::LAlt),
-                    bs(KeyboardCode::LGui),
+                    bs(KbEvent::K(KeyboardCode::LAlt)),
+                    bs(KbEvent::K(KeyboardCode::LGui)),
                     ButtonAction::MomentaryLayer(0),
-                    bs(KeyboardCode::Space),
-                    bs(KeyboardCode::Space),
+                    bs(KbEvent::K(KeyboardCode::Space)),
+                    bs(KbEvent::K(KeyboardCode::Space)),
                     ButtonAction::MomentaryLayer(1),
-                    bs(KeyboardCode::Left).add_layer(KeyboardCode::Home, 1),
-                    bs(KeyboardCode::Down)
-                        .add_layer(KeyboardCode::VolDown, 0)
-                        .add_layer(KeyboardCode::PgDown, 1),
-                    bs(KeyboardCode::Up)
-                        .add_layer(KeyboardCode::VolUp, 0)
-                        .add_layer(KeyboardCode::PgUp, 1),
-                    bs(KeyboardCode::Right)
-                        .add_layer(KeyboardCode::Mute, 0)
-                        .add_layer(KeyboardCode::End, 1),
+                    bs(KbEvent::K(KeyboardCode::Left)).add_layer(KbEvent::K(KeyboardCode::Home), 1),
+                    bs(KbEvent::K(KeyboardCode::Down))
+                        .add_layer(KbEvent::K(KeyboardCode::VolDown), 0)
+                        .add_layer(KbEvent::K(KeyboardCode::PgDown), 1),
+                    bs(KbEvent::K(KeyboardCode::Up))
+                        .add_layer(KbEvent::K(KeyboardCode::VolUp), 0)
+                        .add_layer(KbEvent::K(KeyboardCode::PgUp), 1),
+                    bs(KbEvent::K(KeyboardCode::Right))
+                        .add_layer(KbEvent::K(KeyboardCode::Mute), 0)
+                        .add_layer(KbEvent::K(KeyboardCode::End), 1),
                 ]),
             ])
         };

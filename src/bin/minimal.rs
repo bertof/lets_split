@@ -6,11 +6,7 @@ use lets_split as _; // global logger + panicking-behavior + memory layout
 #[rtic::app(device = stm32f4xx_hal::pac, peripherals = true)]
 mod app {
     use core::iter;
-    use keyboard_io::{
-        codes::KeyboardCode,
-        hid::{keyboard::KeyboardReport, PID, VID},
-        prelude::*,
-    };
+    use keyboard_io::{codes::KeyboardCode, hid::keyboard::KeyboardReport, prelude::*};
     use stm32f4xx_hal::{
         gpio::{EPin, Input, PullUp},
         otg_fs::{UsbBusType, USB},
@@ -18,6 +14,7 @@ mod app {
         prelude::*,
         timer,
     };
+    use usb_device::test_class::{PID, VID};
 
     type UsbKeyboardClass = HIDClass<'static, UsbBusType>;
     type UsbDevice = keyboard_io::prelude::UsbDevice<'static, UsbBusType>;
