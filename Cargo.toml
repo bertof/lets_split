@@ -24,7 +24,7 @@ stm32f4xx-hal = { version = "0.11", features = [ "rt", "stm32f411", "usb_fs" ] }
 cortex-m-rtic = "1.0"
 dwt-systick-monotonic = "1.0"
 usb-device = "0.2"
-keyboard-io = { path = "../keyboard-io/" }
+keyboard-io = { git = "ssh://git@gitlab.com/bertof/keyboard-io.git" }
 
 [dev-dependencies]
 defmt-test = "0.3.0"
