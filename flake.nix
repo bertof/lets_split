@@ -33,33 +33,29 @@
       rec {
 
         apps = {
-          upload_usb = flake-utils.mkApp {
-            drv =
-
-              pkgs.writeShellScriptBin "upload_usb" ''
-                export PATH="${pkgs.lib.makeBinPath (minBuildInputs ++ [pkgs.dfu-util])}":$PATH
-                cargo build --release --bin ''${1:-split}
-                arm-none-eabi-objcopy -O binary target/thumbv7em-none-eabihf/release/split split.bin
-                sudo dfu-util -a 0 -s 0x8000000 -RD split.bin
-              ''
+          upload_usb = flake-utils.lib.mkApp {
+            drv = pkgs.writeShellScriptBin "upload_usb" ''
+              export PATH="${pkgs.lib.makeBinPath (minBuildInputs ++ [pkgs.dfu-util])}":$PATH
+              cargo build --release --bin ''${1:-split}
+              arm-none-eabi-objcopy -O binary target/thumbv7em-none-eabihf/release/split split.bin
+              sudo dfu-util -a 0 -s 0x8000000 -RD split.bin
+            ''
             ;
           };
 
-          update_keyboard = flake-utils.mkApp {
-            drv =
+          update_keyboard = flake-utils.lib.mkApp {
+            drv = pkgs.writeShellScriptBin "upload_update_keyboard" ''
+              export PATH="${pkgs.lib.makeBinPath (minBuildInputs ++ [pkgs.dfu-util])}":$PATH
+              cargo build --release --bin ''${1:-split}
+              arm-none-eabi-objcopy -O binary target/thumbv7em-none-eabihf/release/split split.bin
 
-              pkgs.writeShellScriptBin "upload_update_keyboard" ''
-                export PATH="${pkgs.lib.makeBinPath (minBuildInputs ++ [pkgs.dfu-util])}":$PATH
-                cargo build --release --bin ''${1:-split}
-                arm-none-eabi-objcopy -O binary target/thumbv7em-none-eabihf/release/split split.bin
-
-                echo Flashing pads until stop
-                while true ; do
-                  sudo dfu-util -a 0 -s 0x8000000 -RD split.bin
-                  echo Retrying in 5 seconds
-                  sleep 5
-                done
-              ''
+              echo Flashing pads until stop
+              while true ; do
+                sudo dfu-util -a 0 -s 0x8000000 -RD split.bin
+                echo Retrying in 5 seconds
+                sleep 5
+              done
+            ''
             ;
           };
         };
