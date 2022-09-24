@@ -24,10 +24,14 @@
         pkgs = import nixpkgs { inherit system overlays; };
         minBuildInputs = with pkgs; [
           gcc-arm-embedded
-          (rust-bin.stable.latest.default.override {
-            targets = [ "x86_64-unknown-linux-gnu" "thumbv7em-none-eabihf" ];
-          })
+          flip-link
+          rustc
           stdenv.cc.cc.lib
+          stdenv.cc
+          git
+        ];
+        uploadInputs = with pkgs; [
+          dfu-util
         ];
       in
       rec {
@@ -35,7 +39,8 @@
         apps = {
           upload_usb = flake-utils.lib.mkApp {
             drv = pkgs.writeShellScriptBin "upload_usb" ''
-              export PATH="${pkgs.lib.makeBinPath (minBuildInputs ++ [pkgs.dfu-util])}":$PATH
+              set -e
+              export PATH="${pkgs.lib.makeBinPath (minBuildInputs ++ uploadInputs)}":$PATH
               cargo build --release --bin ''${1:-split}
               arm-none-eabi-objcopy -O binary target/thumbv7em-none-eabihf/release/split split.bin
               sudo dfu-util -a 0 -s 0x8000000 -RD split.bin
@@ -45,13 +50,14 @@
 
           update_keyboard = flake-utils.lib.mkApp {
             drv = pkgs.writeShellScriptBin "upload_update_keyboard" ''
-              export PATH="${pkgs.lib.makeBinPath (minBuildInputs ++ [pkgs.dfu-util])}":$PATH
+              set -e
+              export PATH="${pkgs.lib.makeBinPath (minBuildInputs ++ uploadInputs)}":$PATH
               cargo build --release --bin ''${1:-split}
               arm-none-eabi-objcopy -O binary target/thumbv7em-none-eabihf/release/split split.bin
 
               echo Flashing pads until stop
               while true ; do
-                sudo dfu-util -a 0 -s 0x8000000 -RD split.bin
+                sudo dfu-util -a 0 -s 0x8000000 -RD split.bin || true
                 echo Retrying in 5 seconds
                 sleep 5
               done
@@ -93,30 +99,24 @@
             ${self.checks.${system}.pre-commit-check.shellHook}
           '';
 
-          buildInputs = with pkgs; [
-            rustc
-            bacon
-            cargo-watch
-            cargo-outdated
-            protobuf
+          buildInputs = minBuildInputs ++ uploadInputs ++ (
+            with pkgs; [
+              bacon
+              cargo-outdated
+              cargo-watch
+              # cmake
+              # expect
+              # gdb-multitarget
+              minicom
+              probe-run
+              protobuf
+              usbutils
 
-            # gdb-multitarget
+              # bashInteractive
+            ]
+          );
 
-            flip-link
-            probe-run
-            usbutils
-
-            git
-            # cmake
-            minicom
-            # expect
-
-            dfu-util
-
-            # bashInteractive
-          ] ++ minBuildInputs;
-
-          depsBuildBuild = with pkgs; [ qemu ];
+          # depsBuildBuild = with pkgs; [ qemu ];
 
           # LD_LIBRARY_PATH = "${pkgs.stdenv.cc.cc.lib}/lib";
 

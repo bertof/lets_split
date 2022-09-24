@@ -210,7 +210,7 @@ mod app {
                     bs(KeyboardCode::B),
                     bs(KeyboardCode::N),
                     bs(KeyboardCode::M),
-                    bs(KeyboardCode::Comma).add_layer(KeyboardCode::Menu, 1),
+                    bs(KeyboardCode::Comma).add_layer(KeyboardCode::Application, 1),
                     bs(KeyboardCode::Dot).add_layer(KeyboardCode::RCtrl, 1),
                     bs(KeyboardCode::Slash).add_layer(KeyboardCode::Insert, 1),
                     bs(KeyboardCode::Enter),
