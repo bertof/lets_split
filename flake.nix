@@ -3,9 +3,15 @@
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-22.11";
-    rust-overlay.url = "github:oxalica/rust-overlay";
+    rust-overlay = {
+      url = "github:oxalica/rust-overlay";
+      inputs = { nixpkgs.follows = "nixpkgs"; flake-utils.follows = "flake-utils"; };
+    };
     flake-utils.url = "github:numtide/flake-utils";
-    pre-commit-hooks.url = "github:cachix/pre-commit-hooks.nix";
+    pre-commit-hooks = {
+      url = "github:cachix/pre-commit-hooks.nix";
+      inputs = { nixpkgs.follows = "nixpkgs"; nixpkgs-stable.follows = "nixpkgs"; flake-utils.follows = "flake-utils"; };
+    };
   };
 
 
@@ -99,15 +105,11 @@
 
           buildInputs = minBuildInputs ++ uploadInputs ++ (
             with pkgs; [
-              bacon
-              cargo-outdated
-              cargo-watch
               # cmake
               # expect
               # gdb-multitarget
               minicom
               probe-run
-              protobuf
               usbutils
             ]
           );
