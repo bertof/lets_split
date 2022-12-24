@@ -2,7 +2,7 @@
   description = "A very basic flake";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-22.05";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-22.11";
     rust-overlay.url = "github:oxalica/rust-overlay";
     flake-utils.url = "github:numtide/flake-utils";
     pre-commit-hooks.url = "github:cachix/pre-commit-hooks.nix";
@@ -14,28 +14,26 @@
       # cargoToml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
       extensions = [ "rust-src" ];
       targets = [ "x86_64-unknown-linux-gnu" "thumbv7em-none-eabihf" ];
-      overlays = [
-        rust-overlay.overlays.default
-        (_: super: { rustc = super.rust-bin.stable.latest.default.override { inherit extensions targets; }; })
-      ];
+      overlays = [ rust-overlay.overlays.default ];
     in
     flake-utils.lib.eachSystem [ "x86_64-linux" "aarch64-linux" ] (system:
       let
         pkgs = import nixpkgs { inherit system overlays; };
+        rust = pkgs.rust-bin.stable.latest.default.override { inherit extensions targets; };
+        # rust = pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.default.override { inherit extensions targets; });
         minBuildInputs = with pkgs; [
           gcc-arm-embedded
           flip-link
-          rustc
           stdenv.cc.cc.lib
           stdenv.cc
           git
+          rust
         ];
         uploadInputs = with pkgs; [
           dfu-util
         ];
       in
-      rec {
-
+      {
         apps = {
           upload_usb = flake-utils.lib.mkApp {
             drv = pkgs.writeShellScriptBin "upload_usb" ''
@@ -74,7 +72,7 @@
                 enable = true;
                 name = "clippy";
                 description = "Lint Rust code.";
-                entry = "${pkgs.rustc}/bin/cargo-clippy";
+                entry = "${rust}/bin/cargo-clippy";
                 files = "\\.rs$";
                 pass_filenames = false;
               };
@@ -82,7 +80,7 @@
                 enable = true;
                 name = "rustfmt";
                 description = "Format Rust code.";
-                entry = "${pkgs.rustc}/bin/cargo fmt -- --check --color always";
+                entry = "${rust}/bin/cargo fmt -- --check --color always";
                 files = "\\.rs$";
                 pass_filenames = false;
               };
@@ -111,8 +109,6 @@
               probe-run
               protobuf
               usbutils
-
-              # bashInteractive
             ]
           );
 
@@ -125,5 +121,4 @@
         };
       }
     );
-
 }
