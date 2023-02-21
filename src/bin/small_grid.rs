@@ -16,7 +16,8 @@ mod app {
         prelude::*,
     };
     use stm32f4xx_hal::{
-        gpio::{EPin, Input, Output, PullUp, PushPull},
+        gpio::{EPin, Input, Output, PushPull},
+        interrupt,
         otg_fs::{UsbBusType, USB},
         pac,
         prelude::*,
@@ -27,7 +28,7 @@ mod app {
     type UsbKeyboardClass = HIDClass<'static, UsbBusType>;
     type UsbDevice = keyboard_io::prelude::UsbDevice<'static, UsbBusType>;
     // type DebouncedInputPin = DebouncedPin<EPin<Input<PullUp>>>;
-    type InputPin = EPin<Input<PullUp>>;
+    type InputPin = EPin<Input>;
     type OutputPin = EPin<Output<PushPull>>;
 
     // Shared resources go here
@@ -42,7 +43,7 @@ mod app {
     #[local]
     struct Local {
         local_grid: LocalGrid<InputPin, OutputPin, 2, 2>,
-        timer: timer::CountDownTimer<pac::TIM3>,
+        timer: timer::CounterUs<pac::TIM3>,
     }
 
     #[init(local = [
@@ -50,19 +51,22 @@ mod app {
       ep_memory: [u32; 1024] = [0; 1024],
     ])]
     fn init(c: init::Context) -> (Shared, Local, init::Monotonics) {
+        rtic::pend(interrupt::TIM3);
+
         let usb_allocator = c.local.usb_allocator;
         let ep_memory = c.local.ep_memory;
 
         let rcc = c.device.RCC.constrain();
         let clocks = rcc
             .cfgr
-            .use_hse(25.mhz())
-            .sysclk(84.mhz())
+            .use_hse(25.MHz())
+            .sysclk(84.MHz())
             .require_pll48clk()
             .freeze();
 
-        let mut timer = timer::Timer::new(c.device.TIM3, &clocks).start_count_down(1.khz());
-        timer.listen(timer::Event::TimeOut);
+        let mut timer = c.device.TIM3.counter_us(&clocks);
+        timer.start(100.micros()).unwrap();
+        timer.listen(timer::Event::Update);
 
         let gpioa = c.device.GPIOA.split();
         let gpiob = c.device.GPIOB.split();

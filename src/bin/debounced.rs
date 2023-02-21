@@ -10,7 +10,8 @@ mod app {
         codes::KeyboardCode, debouncer::DebouncedPin, hid::keyboard::KeyboardReport, prelude::*,
     };
     use stm32f4xx_hal::{
-        gpio::{EPin, Input, PullUp},
+        gpio::{EPin, Input},
+        interrupt,
         otg_fs::{UsbBusType, USB},
         pac,
         prelude::*,
@@ -31,9 +32,9 @@ mod app {
     // Local resources go here
     #[local]
     struct Local {
-        in_pins: [DebouncedPin<EPin<Input<PullUp>>>; 1],
+        in_pins: [DebouncedPin<EPin<Input>>; 1],
         // out_pins: [EPin<Output<PushPull>>; 1],
-        timer: timer::CountDownTimer<pac::TIM3>,
+        timer: timer::CounterUs<pac::TIM3>,
     }
 
     #[init(local = [
@@ -41,19 +42,24 @@ mod app {
       ep_memory: [u32; 1024] = [0; 1024],
     ])]
     fn init(c: init::Context) -> (Shared, Local, init::Monotonics) {
+        rtic::pend(interrupt::TIM3);
+
         let usb_allocator = c.local.usb_allocator;
         let ep_memory = c.local.ep_memory;
 
         let rcc = c.device.RCC.constrain();
         let clocks = rcc
             .cfgr
-            .use_hse(25.mhz())
-            .sysclk(84.mhz())
+            .use_hse(25.MHz())
+            .sysclk(84.MHz())
             .require_pll48clk()
             .freeze();
 
-        let mut timer = timer::Timer::new(c.device.TIM3, &clocks).start_count_down(1.khz());
-        timer.listen(timer::Event::TimeOut);
+        // let mut timer = timer::Timer::new(c.device.TIM3, &clocks)
+        //     .start_count_down(1.khz());
+        let mut timer = c.device.TIM3.counter_us(&clocks);
+        timer.start(100.micros()).unwrap();
+        timer.listen(timer::Event::Update);
 
         let gpioa = c.device.GPIOA.split();
         // let gpiob = c.device.GPIOB.split();
@@ -123,7 +129,6 @@ mod app {
 
     #[task(binds = TIM3, priority = 1, shared = [usb_class], local = [timer, in_pins])]
     fn tick(mut c: tick::Context) {
-        c.local.timer.clear_interrupt(timer::Event::TimeOut);
         let pressed = c.local.in_pins[0].is_low().unwrap();
         c.shared.usb_class.lock(|usb_class| {
             if pressed {
