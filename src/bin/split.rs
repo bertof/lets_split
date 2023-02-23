@@ -74,7 +74,7 @@ mod app {
             .freeze();
 
         let mut timer = c.device.TIM3.counter_us(&clocks);
-        timer.start(100.micros()).unwrap();
+        timer.start(250.micros()).unwrap();
         timer.listen(timer::Event::Update);
 
         let gpioa = c.device.GPIOA.split();
