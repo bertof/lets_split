@@ -2,7 +2,7 @@
 authors = ["Filippo Berto <berto.f@protonmail.com>"]
 name = "lets-split"
 edition = "2018"
-version = "0.1.0"
+version = "0.1.1"
 
 [lib]
 harness = false
@@ -19,7 +19,7 @@ cortex-m-rt = "0.7"
 defmt = "0.3"
 defmt-rtt = "0.4"
 panic-probe = { version = "0.3", features = ["print-defmt"] }
-stm32f4xx-hal = { version = "0.14", features = ["rt", "stm32f411", "usb_fs"] }
+stm32f4xx-hal = { version = "0.17", features = ["rt", "stm32f411", "usb_fs"] }
 
 cortex-m-rtic = "1.0"
 dwt-systick-monotonic = "1.0"

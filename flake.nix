@@ -63,7 +63,7 @@
         apps = {
           upload_usb = {
             type = "app";
-            program = pkgs.writeShellScript "upload_usb" ''
+            program = pkgs.writeShellScriptBin "upload_usb" ''
               set -e
               export PATH="${pkgs.lib.makeBinPath (minBuildInputs ++ uploadInputs)}":$PATH
               cargo build --release --bin ''${1:-split}
@@ -74,7 +74,7 @@
           };
           update_keyboard = {
             type = "app";
-            program = pkgs.writeShellScript "upload_update_keyboard" ''
+            program = pkgs.writeShellScriptBin "upload_update_keyboard" ''
               set -e
               export PATH="${pkgs.lib.makeBinPath (minBuildInputs ++ uploadInputs)}":$PATH
               cargo build --release --bin ''${1:-split}

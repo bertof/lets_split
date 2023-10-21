@@ -17,7 +17,7 @@ mod app {
         prelude::{HIDClass, PinState, SerializedDescriptor, UsbDeviceBuilder, UsbVidPid},
     };
     use stm32f4xx_hal::{
-        gpio::{EPin, Input, Output, PushPull},
+        gpio::{alt, EPin, Input, Output, PushPull},
         interrupt,
         otg_fs::{UsbBusType, USB},
         pac::{self, USART1},
@@ -88,8 +88,8 @@ mod app {
             usb_global: c.device.OTG_FS_GLOBAL,
             usb_device: c.device.OTG_FS_DEVICE,
             usb_pwrclk: c.device.OTG_FS_PWRCLK,
-            pin_dm: gpioa.pa11.into_alternate(),
-            pin_dp: gpioa.pa12.into_alternate(),
+            pin_dm: alt::otg_fs::Dm::PA11(gpioa.pa11.into_alternate()),
+            pin_dp: alt::otg_fs::Dp::PA12(gpioa.pa12.into_alternate()),
             hclk: clocks.hclk(),
         };
         *usb_allocator = Some(UsbBusType::new(usb, ep_memory));
