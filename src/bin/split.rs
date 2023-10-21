@@ -185,10 +185,18 @@ mod app {
                 ]),
                 row([
                     bs(KeyboardCode::Tab).add_layer(KeyboardCode::F1, 1),
-                    bs(KeyboardCode::A).add_layer(KeyboardCode::F2, 1),
-                    bs(KeyboardCode::S).add_layer(KeyboardCode::F3, 1),
-                    bs(KeyboardCode::D).add_layer(KeyboardCode::F4, 1),
-                    bs(KeyboardCode::F).add_layer(KeyboardCode::F5, 1),
+                    bs(KeyboardCode::A)
+                        .add_layer(KeyboardCode::F2, 1)
+                        .add_layer(KeyboardCode::Left, 2),
+                    bs(KeyboardCode::S)
+                        .add_layer(KeyboardCode::F3, 1)
+                        .add_layer(KeyboardCode::Down, 2),
+                    bs(KeyboardCode::D)
+                        .add_layer(KeyboardCode::F4, 1)
+                        .add_layer(KeyboardCode::Up, 2),
+                    bs(KeyboardCode::F)
+                        .add_layer(KeyboardCode::F5, 1)
+                        .add_layer(KeyboardCode::Right, 2),
                     bs(KeyboardCode::G).add_layer(KeyboardCode::F6, 1),
                     bs(KeyboardCode::H).add_layer(KeyboardCode::F7, 1),
                     bs(KeyboardCode::J).add_layer(KeyboardCode::F8, 1),

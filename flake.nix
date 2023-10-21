@@ -2,47 +2,68 @@
   description = "A very basic flake";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-22.11";
-    rust-overlay = {
-      url = "github:oxalica/rust-overlay";
-      inputs = { nixpkgs.follows = "nixpkgs"; flake-utils.follows = "flake-utils"; };
-    };
-    flake-utils.url = "github:numtide/flake-utils";
-    pre-commit-hooks = {
-      url = "github:cachix/pre-commit-hooks.nix";
-      inputs = { nixpkgs.follows = "nixpkgs"; nixpkgs-stable.follows = "nixpkgs"; flake-utils.follows = "flake-utils"; };
-    };
+    flake-parts.url = "github:hercules-ci/flake-parts";
+    nixpkgs.url = "github:nixos/nixpkgs";
+    pre-commit-hooks-nix.url = "github:cachix/pre-commit-hooks.nix";
+    rust-overlay.url = "github:oxalica/rust-overlay";
+    systems.url = "github:nix-systems/default";
   };
 
-
-  outputs = { self, nixpkgs, rust-overlay, flake-utils, pre-commit-hooks }:
-    let
-      # cargoToml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
-      extensions = [ "rust-src" ];
-      targets = [ "x86_64-unknown-linux-gnu" "thumbv7em-none-eabihf" ];
-      overlays = [ rust-overlay.overlays.default ];
-    in
-    flake-utils.lib.eachSystem [ "x86_64-linux" "aarch64-linux" ] (system:
+  outputs = inputs: inputs.flake-parts.lib.mkFlake { inherit inputs; } {
+    systems = import inputs.systems;
+    imports = [
+      # To import a flake module
+      # 1. Add foo to inputs
+      # 2. Add foo as a parameter to the outputs function
+      # 3. Add here: foo.flakeModule
+      inputs.pre-commit-hooks-nix.flakeModule
+    ];
+    perSystem =
+      { config
+        # , self'
+        # , inputs'
+      , pkgs
+      , system
+      , lib
+      , ...
+      }:
       let
-        pkgs = import nixpkgs { inherit system overlays; };
-        rust = pkgs.rust-bin.stable.latest.default.override { inherit extensions targets; };
-        # rust = pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.default.override { inherit extensions targets; });
         minBuildInputs = with pkgs; [
           gcc-arm-embedded
           flip-link
           stdenv.cc.cc.lib
           stdenv.cc
           git
-          rust
+          rustc
         ];
         uploadInputs = with pkgs; [
           dfu-util
         ];
       in
       {
+        # Per-system attributes can be defined here. The self' and inputs'
+        # module parameters provide easy access to attributes of the same
+        # system.
+
+        # This sets `pkgs` to a nixpkgs with allowUnfree option set.
+        _module.args.pkgs = import inputs.nixpkgs {
+          inherit system;
+          overlays = [
+            inputs.rust-overlay.overlays.default
+            (self: _super: {
+              rustc = self.rust-bin.stable.latest.default.override {
+                extensions = [ "rust-src" ];
+                targets = [ "x86_64-unknown-linux-gnu" "thumbv7em-none-eabihf" ];
+              };
+            })
+          ];
+          # config.allowUnfree = true;
+        };
+
         apps = {
-          upload_usb = flake-utils.lib.mkApp {
-            drv = pkgs.writeShellScriptBin "upload_usb" ''
+          upload_usb = {
+            type = "app";
+            program = pkgs.writeShellScript "upload_usb" ''
               set -e
               export PATH="${pkgs.lib.makeBinPath (minBuildInputs ++ uploadInputs)}":$PATH
               cargo build --release --bin ''${1:-split}
@@ -51,9 +72,9 @@
             ''
             ;
           };
-
-          update_keyboard = flake-utils.lib.mkApp {
-            drv = pkgs.writeShellScriptBin "upload_update_keyboard" ''
+          update_keyboard = {
+            type = "app";
+            program = pkgs.writeShellScript "upload_update_keyboard" ''
               set -e
               export PATH="${pkgs.lib.makeBinPath (minBuildInputs ++ uploadInputs)}":$PATH
               cargo build --release --bin ''${1:-split}
@@ -70,37 +91,37 @@
           };
         };
 
-        checks = {
-          pre-commit-check = pre-commit-hooks.lib.${system}.run {
-            src = ./.;
+        pre-commit = {
+          settings = {
             hooks = {
-              cargo-clippy = {
-                enable = true;
-                name = "clippy";
-                description = "Lint Rust code.";
-                entry = "${rust}/bin/cargo-clippy";
-                files = "\\.rs$";
-                pass_filenames = false;
-              };
-              cargo-rustfmt = {
-                enable = true;
-                name = "rustfmt";
-                description = "Format Rust code.";
-                entry = "${rust}/bin/cargo fmt -- --check --color always";
-                files = "\\.rs$";
-                pass_filenames = false;
-              };
-              nix-linter.enable = true;
+              deadnix.enable = true;
               nixpkgs-fmt.enable = true;
-              # clippy.enable = true;
-              # rustfmt.enable = true;
+              statix.enable = true;
+
+              clippy.enable = true;
+              rustfmt.enable = true;
+              # cargo-test = {
+              #   enable = true;
+              #   name = "cargo test";
+              #   description = "Test Rust code.";
+              #   entry = toString (pkgs.writeShellScript "cargo test" ''
+              #     export PATH=${lib.makeBinPath minBuildInputs}
+              #     cargo test'');
+              #   files = "\\.rs$";
+              #   pass_filenames = false;
+              # };
+            };
+            tools = {
+              cargo = lib.mkForce pkgs.rustc;
+              clippy = lib.mkForce pkgs.rustc;
+              rustfmt = lib.mkForce pkgs.rustc;
             };
           };
         };
 
         devShells.default = pkgs.mkShell {
           shellHook = ''
-            ${self.checks.${system}.pre-commit-check.shellHook}
+            ${config.pre-commit.installationScript}
           '';
 
           buildInputs = minBuildInputs ++ uploadInputs ++ (
@@ -121,6 +142,13 @@
           # CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER = "cc";
           # CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_RUNNER = "qemu-aarch64";
         };
-      }
-    );
+
+        formatter = pkgs.nixpkgs-fmt;
+      };
+    flake = {
+      # The usual flake attributes can be defined here, including system-
+      # agnostic ones like nixosModule and system-enumerating ones, although
+      # those are more easily expressed in perSystem.
+    };
+  };
 }
